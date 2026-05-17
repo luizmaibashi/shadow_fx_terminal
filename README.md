@@ -125,21 +125,21 @@ O projeto é dividido em **5 fases** que constroem uma sobre a outra, seguindo a
 ┌──────────────────────────────────────────────────────────────────────┐
 │                       SHADOW FX TERMINAL v2                          │
 │                                                                      │
-│  FASE 1: Prova da Tese (Dados Reais)   FASE 2: Índice de Risco v2   │
+│  FASE 1: Prova da Tese (Dados Reais)   FASE 2: Índice de Risco v2    │
 │  ┌──────────────────────────────┐      ┌──────────────────────────┐  │
 │  │ yfinance: BRL/USD + USDT Vol │      │ Sinal Câmbio adj. DXY    │  │
 │  │ BCB API:  IPCA, Selic, Dív.  ├─────►│ Sinal USDT/USDC Volume   ├─┐│
 │  │ pytrends: Interesse BR USDT  │      │ Tom Copom (hawkish/dov.) │ ││
 │  └──────────────────────────────┘      │ IPCA Desvio Meta         │ ││
-│   r=+0.496 bruta | r=+0.707 Dívida    │ Dívida/PIB (r=+0.707)    │ ││
-│   Lead-Lag 1-4sem | Parcial −2.5% DXY │ IBC-Br (atividade)       │ ││
+│   r=+0.496 bruta | r=+0.707 Dívida    │ Dívida/PIB (r=+0.707)     │ ││
+│   Lead-Lag 1-4sem | Parcial −2.5% DXY │ IBC-Br (atividade)        │ ││
 │                                        └──────────────────────────┘ ││
-│                                              IRF 0-100 diário        ││
-│  FASE 3: Motor de Compliance AML                                     ││
+│                                              IRF 0-100 diário       ││
+│  FASE 3: Motor de Compliance AML                                    ││
 │  ┌───────────────────────────────────────────────────────────────┐  ││
 │  │ C1: Filtros BCB 519-521 (regras determinísticas) → Flag       │  ││
 │  │ C2: Isolation Forest + IRF como feature contextual → Score    │◄─┘│
-│  │ C3: LLM-as-judge (Gemini 2.5 Flash + RAG Copom) → COAF       │   │
+│  │ C3: LLM-as-judge (Gemini 2.5 Flash + RAG Copom) → COAF        │   │
 │  └───────────────────────────────────────────────────────────────┘   │
 │                                                                      │
 │  FASE 4: FastAPI (backend) + Streamlit Dashboard (frontend)          │
