@@ -3,7 +3,7 @@
 
 ---
 
-## 🏛️ Introdução: O Paradigma do Cientista de Dados Sênior & AI Engineer
+## 🏛️ Introdução: O Paradigma do Cientista de Dados & AI Engineer
 
 Para entender o **Shadow FX Terminal**, é preciso compreender a interseção de duas disciplinas cruciais da inteligência artificial moderna: a **Ciência de Dados (Data Science)** e a **Engenharia de IA (AI Engineering)**. 
 
