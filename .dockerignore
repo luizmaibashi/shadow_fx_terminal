@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Data & Models (Keep processed if needed, but usually we generate/mount)
+# data/raw/*
+# data/processed/*
+# models/*
+
+# Secrets & Local Config
+.env
+.ipynb_checkpoints/
+.pytest_cache/
+.vscode/
+.idea/
+.gemini/
+tests/
+
+# Jupyter
+notebooks/.ipynb_checkpoints/

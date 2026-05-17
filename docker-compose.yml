@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # --- UI Service: Streamlit Dashboard ---
+  dashboard:
+    build: .
+    container_name: shadow-fx-dashboard
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    environment:
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+    command: streamlit run app.py
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # --- API Service: FastAPI Backend ---
+  backend:
+    build: .
+    container_name: shadow-fx-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    command: uvicorn src.api:app --host 0.0.0.0 --port 8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # --- Setup Service: Optional tool to initialize data ---
+  # Run with: docker-compose run setup
+  setup:
+    build: .
+    container_name: shadow-fx-setup
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    env_file:
+      - .env
+    command: >
+      sh -c "python src/coletar_dados.py && 
+             python src/scraper_copom.py && 
+             python src/coletar_google_trends_br.py && 
+             python src/gerador_transacoes_mock.py && 
+             python src/treinar_modelo.py && 
+             python src/pipeline_compliance.py"
+    profiles:
+      - setup_only
+
+volumes:
+  data:
+  models:
