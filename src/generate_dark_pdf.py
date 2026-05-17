@@ -44,26 +44,62 @@ def scale_and_center_image(image_path, canvas_size=(1920, 1080), bg_color=(14, 1
         return None
 
 def build_dark_pdf(image_paths, output_pdf_path):
-    slides = []
+    import fitz
     
-    for path in image_paths:
+    slides = []
+    temp_files = []
+    
+    print("Scaling and centering images on dark canvases...")
+    for i, path in enumerate(image_paths):
         slide = scale_and_center_image(path)
         if slide:
-            slides.append(slide)
+            # Save the slide canvas as a temporary lossless PNG
+            temp_png = f"temp_slide_{i}.png"
+            slide.save(temp_png, "PNG", compress_level=1)
+            temp_files.append(temp_png)
+            slides.append(temp_png)
             
     if not slides:
         print("No slides were generated.")
         return False
     
     try:
-        # Save the list of images as a single PDF file
-        # The first image is the main document, and the rest are appended
-        slides[0].save(output_pdf_path, save_all=True, append_images=slides[1:])
-        print(f"Successfully generated dark-mode PDF: {output_pdf_path}")
+        # Create a new blank PDF document in PyMuPDF
+        doc = fitz.open()
+        
+        print("Embedding PNGs losslessly into PDF pages...")
+        for temp_png in slides:
+            # Open the temporary PNG using PyMuPDF
+            img_doc = fitz.open(temp_png)
+            # Convert the image to a PDF page bytes representation losslessly
+            pdf_bytes = img_doc.convert_to_pdf()
+            img_doc.close()
+            
+            # Open the converted PDF bytes as a document page
+            slide_pdf = fitz.open("pdf", pdf_bytes)
+            # Insert the page into our main document
+            doc.insert_pdf(slide_pdf)
+            slide_pdf.close()
+            
+        # Save the finalized PDF with lossless stream compression
+        doc.save(output_pdf_path)
+        doc.close()
+        
+        print(f"Successfully generated ultra-crisp lossless dark-mode PDF: {output_pdf_path}")
         return True
     except Exception as e:
-        print(f"Error saving PDF: {e}")
+        print(f"Error saving PDF via PyMuPDF: {e}")
         return False
+    finally:
+        # Clean up temporary lossless files
+        print("Cleaning up temporary assets...")
+        for temp_file in temp_files:
+            try:
+                if os.path.exists(temp_file):
+                    os.remove(temp_file)
+            except Exception as ex:
+                print(f"Error removing temp file {temp_file}: {ex}")
+
 
 if __name__ == "__main__":
     reports_dir = "reports"
