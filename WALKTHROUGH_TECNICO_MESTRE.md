@@ -9,7 +9,7 @@ Para entender o **Shadow FX Terminal**, é preciso compreender a interseção de
 
 No mercado corporativo atual, o maior gargalo não é a criação de modelos preditivos, mas sim a sua **produtização sob rigor estatístico, de conformidade regulatória e de segurança**. Este projeto foi desenhado para romper o abismo entre o laboratório experimental (notebooks) e o ambiente de produção em tempo real (APIs e dashboards), servindo como a consolidação prática e avançada do meu processo de estudo e aprendizado contínuo na **Pós Tech AI Scientist**.
 
-| Dimensão | O Cientista de Dados Tradicional | O AI Engineer de Produção | A Abordagem Shadow FX Terminal (Fusão Sênior) |
+| Dimensão | O Cientista de Dados Tradicional | O AI Engineer de Produção | A Abordagem Shadow FX Terminal |
 | :--- | :--- | :--- | :--- |
 | **Foco Principal** | Modelagem experimental, validação estatística e hipóteses em Jupyter Notebooks. | Arquitetura de software, latência, segurança, integrações e entrega do sistema. | **Rigor Científico + Solidez de Engenharia:** Análise macroeconômica validada estatisticamente alimentando um pipeline em cascata robusto. |
 | **Artefato de Entrega** | Um arquivo `.ipynb` com gráficos estáticos e uma acurácia teórica alta. | Uma API conteinerizada (`Dockerfile`), testes unitários e infraestrutura pronta. | **Sistema Ponta a Ponta:** Três notebooks CRISP-DM de pesquisa pareados com módulos `.py` modulares, FastAPI, Streamlit Dashboard e Docker seguro. |
