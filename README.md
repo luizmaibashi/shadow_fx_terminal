@@ -29,7 +29,7 @@ O Brasil vive uma crise silenciosa de integridade financeira. Em paralelo à des
 
 ### A Dupla Inspiração — Paper + Evento de Mercado
 
-**O ponto de partida acadêmico** foi o paper de Paulo J. Britto (OTC Research, 2026), que demonstrou quantitativamente que brasileiros usam USDT como reserva de valor — não como especulação. A tese era robusta, mas o dataset era limitado a correlações descritivas sem geolocalização.
+**O ponto de partida acadêmico** foi o paper de Paulo J. Britto (OTC Research, 2026), que demonstrou quantitativamente que brasileiros usam USDT como reserva de valor — não como especulação.
 
 **O segundo vetor de inspiração** veio de um evento do mercado financeiro sobre as **novas fronteiras de segurança financeira no ecossistema digital**. O evento discutiu como as instituições financeiras tradicionais estão sendo forçadas a repensar seus modelos de compliance frente a:
 - **Pagamentos instantâneos 24/7** (Pix): janela de fraude que não dorme
