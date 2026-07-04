@@ -18,6 +18,8 @@ src/__pycache__/
 *.pyo
 .env
 .env.*
+# Mas versionar o .env.example (template)
+!.env.example
 
 # Jupyter
 .ipynb_checkpoints/
@@ -29,6 +31,10 @@ Thumbs.db
 .pytest_cache/
 *.log
 pipeline.log
+
+# Artefatos gerados (regeneraveis — nao versionar)
+reports/
+data/raw/__pycache__/
 
 # Planejamento e Estratégia de Mídia (Privado)
 docs/linkedin_post_strategy.md

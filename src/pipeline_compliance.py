@@ -27,6 +27,7 @@ Principios de Engenharia:
     - Explicavel (XAI): cada flag tem uma razao documentada
 """
 
+import os
 import sys
 import json
 import joblib
@@ -40,7 +41,7 @@ from sklearn.preprocessing import StandardScaler
 
 # Adicionar src ao path para imports relativos funcionarem
 sys.path.insert(0, str(Path(__file__).parent))
-from utils import PROJECT_ROOT, DATA_RAW
+from utils import PROJECT_ROOT, DATA_RAW, FEATURES_ML, IRF_LAG_DAYS
 
 # Configuração de Logging Profissional
 logging.basicConfig(
@@ -131,13 +132,7 @@ def camada1_filtros_bcb(df: pd.DataFrame) -> pd.DataFrame:
 # ══════════════════════════════════════════════════════════════════
 # FEATURE ENGINEERING (Training-Serving Parity)
 # ══════════════════════════════════════════════════════════════════
-
-FEATURES_ML = [
-    "valor_brl",
-    "n_transacoes_dia",
-    "irf_contexto",
-    "entropia_wallets"  # Novo: Detecta dispersao suspeita (Smurfing)
-]
+# NOTA: FEATURES_ML esta centralizado em utils.py — unico ponto de verdade.
 
 
 def engenharia_features(df: pd.DataFrame, df_irf: pd.DataFrame) -> pd.DataFrame:
@@ -154,10 +149,13 @@ def engenharia_features(df: pd.DataFrame, df_irf: pd.DataFrame) -> pd.DataFrame:
     n_tx_dia = df.groupby(["user_id", "data"])["valor_brl"].count().reset_index(name="n_transacoes_dia")
     df = df.merge(n_tx_dia, on=["user_id", "data"], how="left")
 
-    # 2. Contexto Macro (IRF v2)
+    # 2. Contexto Macro (IRF v2 com lag anti-leakage)
+    # IRF_LAG_DAYS: macrovariaveis sao publicadas com atraso (IPCA ~15d, Divida/PIB ~30d).
+    # Usar IRF[t] no dia exato incluiria info futura — deslocamos para tras.
     df_irf_copy = df_irf[["irf_v2"]].copy()
     df_irf_copy.index = pd.to_datetime(df_irf_copy.index)
-    df["irf_contexto"] = df["data_ts"].map(
+    df["data_com_lag"] = df["data_ts"] - pd.Timedelta(days=IRF_LAG_DAYS)
+    df["irf_contexto"] = df["data_com_lag"].map(
         lambda d: df_irf_copy["irf_v2"].asof(d) if d in df_irf_copy.index or d >= df_irf_copy.index[0] else 50.0
     ).fillna(50.0)
 
@@ -218,9 +216,68 @@ def inferir_score(df_features: pd.DataFrame, modelo, scaler) -> pd.DataFrame:
     return df_features
 
 
+# Flag para ativar/desativar chamada LLM real (evita dependencia de API no desenvolvimento)
+LLM_JUDGE_ENABLED = os.getenv("LLM_JUDGE_ENABLED", "false").lower() == "true"
+
 # ══════════════════════════════════════════════════════════════════
-# CAMADA 3: PREPARACAO PARA LLM-AS-JUDGE
+# CAMADA 3: LLM-AS-JUDGE (Julgamento qualitativo)
 # ══════════════════════════════════════════════════════════════════
+
+def executar_camada3_llm(df_cinza: pd.DataFrame) -> pd.DataFrame:
+    """Executa o LLM-as-judge nos casos cinza, integrando o agente RAG.
+
+    Requer LLM_JUDGE_ENABLED=true e GEMINI_API_KEY no .env.
+    Se desabilitado ou sem API key, usa fallback heuristico.
+    """
+    try:
+        from agente_rag import julgar_transacao_llm
+    except ImportError:
+        logger.warning("[C3] agente_rag.py nao encontrado. Usando fallback heuristico.")
+        df_cinza["c3_veredito"] = "FALLBACK"
+        df_cinza["c3_justificativa"] = "LLM nao disponivel (agente_rag.py ausente)"
+        df_cinza["c3_rascunho_coaf"] = ""
+        return df_cinza
+
+    if not LLM_JUDGE_ENABLED:
+        logger.info("[C3] LLM-as-judge desabilitado (LLM_JUDGE_ENABLED=false). Usando fallback.")
+        df_cinza["c3_veredito"] = "FALLBACK"
+        df_cinza["c3_justificativa"] = "Julgamento LLM desabilitado — analise manual requerida"
+        df_cinza["c3_rascunho_coaf"] = ""
+        return df_cinza
+
+    logger.info(f"[C3] Executando LLM-as-judge em {len(df_cinza)} casos cinza...")
+    for idx, row in df_cinza.iterrows():
+        tx_dict = {
+            "user_id": row.get("user_id", "N/A"),
+            "data": str(row.get("data_ts", "")),
+            "valor_brl": float(row.get("valor_brl", 0)),
+            "hora": int(row.get("hora", 0)),
+            "wallets_unicas": int(row.get("wallets_unicas", 1)),
+            "score_ml": float(row.get("c2_score_anomalia", 0)),
+            "razoes": str(row.get("c1_razoes", "")),
+        }
+        resultado = julgar_transacao_llm(tx_dict)
+        df_cinza.at[idx, "c3_resposta_llm_bruta"] = resultado
+
+        # Parse estruturado do resultado
+        veredito = "REQUER_INVESTIGACAO"
+        justificativa = ""
+        rascunho = ""
+        for linha in resultado.split("\n"):
+            linha_stripped = linha.strip()
+            if linha_stripped.startswith("VEREDITO:"):
+                veredito = linha_stripped.replace("VEREDITO:", "").strip()
+            elif linha_stripped.startswith("JUSTIFICATIVA:"):
+                justificativa = linha_stripped.replace("JUSTIFICATIVA:", "").strip()
+            elif linha_stripped.startswith("RASCUNHO COAF:"):
+                rascunho = linha_stripped.replace("RASCUNHO COAF:", "").strip()
+
+        df_cinza.at[idx, "c3_veredito"] = veredito
+        df_cinza.at[idx, "c3_justificativa"] = justificativa
+        df_cinza.at[idx, "c3_rascunho_coaf"] = rascunho
+
+    logger.info(f"[C3] LLM-as-judge concluido. Vereditos: {df_cinza['c3_veredito'].value_counts().to_dict()}")
+    return df_cinza
 
 def preparar_prompt_llm(transacao: pd.Series) -> str:
     """Gera o prompt para o LLM-as-judge avaliar casos 'cinza'."""
@@ -298,13 +355,24 @@ def executar_pipeline(df_tx: pd.DataFrame, df_irf: pd.DataFrame) -> pd.DataFrame
     logger.info(f"     Classificados SUSPEITOS: {(df_c2['c2_classificacao'] == 'suspeito').sum()}")
     logger.info(f"     Classificados CINZA:     {(df_c2['c2_classificacao'] == 'cinza').sum()}")
 
-    # Camada 3: Preparar prompts para zona cinza
+    # Camada 3: Julgamento qualitativo via LLM-as-Judge
+    # (com fallback heuristico se LLM desabilitado ou API indisponivel)
     mask_cinza = df_c2["c2_classificacao"] == "cinza"
-    logger.info(f"[C3] {mask_cinza.sum()} casos cinza prontos para LLM-as-judge (Fase futura)")
     if mask_cinza.any():
         df_c2.loc[mask_cinza, "c3_prompt_llm"] = df_c2[mask_cinza].apply(
             preparar_prompt_llm, axis=1
         )
+        df_c2.loc[mask_cinza, "c3_resposta_llm_bruta"] = ""
+        df_c2.loc[mask_cinza, "c3_veredito"] = "FALLBACK"
+        df_c2.loc[mask_cinza, "c3_justificativa"] = "Aguardando julgamento LLM"
+        df_c2.loc[mask_cinza, "c3_rascunho_coaf"] = ""
+
+        df_cinza = executar_camada3_llm(df_c2.loc[mask_cinza].copy())
+        for col in ["c3_resposta_llm_bruta", "c3_veredito", "c3_justificativa", "c3_rascunho_coaf"]:
+            df_c2.loc[mask_cinza, col] = df_cinza[col]
+        logger.info(f"[C3] {mask_cinza.sum()} casos cinza processados via LLM-as-judge.")
+    else:
+        logger.info("[C3] Nenhum caso cinza — Camada 3 nao acionada.")
 
     # Score final composto
     # Converter flag C1 para inteiro para o calculo

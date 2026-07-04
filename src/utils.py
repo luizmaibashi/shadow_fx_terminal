@@ -43,6 +43,20 @@ REPORTS_DIR  = PROJECT_ROOT / "reports"
 DATA_PROC.mkdir(parents=True, exist_ok=True)
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
+# Features de ML centralizadas (DRY: unico ponto de verdade)
+FEATURES_ML = [
+    "valor_brl",
+    "n_transacoes_dia",
+    "irf_contexto",
+    "entropia_wallets"
+]
+
+# Lag de seguranca para evitar data leakage no IRF:
+# Macrovariaveis (IPCA, Selic, Divida/PIB) sao publicadas com semanas de atraso.
+# Usar IRF[t] no dia exato da transacao pode incluir info que nao era conhecida.
+# IRF_LAG_DAYS = 14 significa: para uma transacao em T, usamos IRF de T-14.
+IRF_LAG_DAYS = 14
+
 
 # -------------------------------------------------------------------
 # FEATURE ENGINEERING: TEMPO

@@ -35,7 +35,7 @@ logger = logging.getLogger("ShadowFX-API")
 # Adicionar src ao path para imports relativos funcionarem
 sys.path.insert(0, str(Path(__file__).parent))
 from utils import (
-    PROJECT_ROOT, DATA_PROC, REPORTS_DIR,
+    PROJECT_ROOT, DATA_PROC, REPORTS_DIR, FEATURES_ML,
     calcular_indice_risco_fiscal,
     calcular_irf_v2,
 )
@@ -68,12 +68,15 @@ from fastapi.responses import JSONResponse
 import os
 
 API_KEY_NAME = "X-API-Key"
-API_KEY = os.getenv("API_KEY_INTERNA", "shadow-fx-secret-2026") # Valor default para dev
+API_KEY = os.getenv("API_KEY_INTERNA")
+if not API_KEY:
+    logger.warning("API_KEY_INTERNA nao definida. Endpoints protegidos estao desabilitados.")
+    logger.warning("Crie um arquivo .env com API_KEY_INTERNA=seu-valor ou defina a variavel de ambiente.")
 
 @app.middleware("http")
 async def verificar_api_key(request: Request, call_next):
-    # Pular verificacao para docs e raiz
-    if request.url.path in ["/docs", "/openapi.json", "/"]:
+    # Pular verificacao para docs, raiz e se API_KEY nao foi configurada
+    if not API_KEY or request.url.path in ["/docs", "/openapi.json", "/"]:
         return await call_next(request)
     
     api_key_header = request.headers.get(API_KEY_NAME)
@@ -169,9 +172,7 @@ def _classificar_irf(irf: float) -> str:
     return "BAIXO"
 
 
-FEATURES_ML = [
-    "valor_brl", "n_transacoes_dia", "irf_contexto", "entropia_wallets"
-]
+# FEATURES_ML importado de utils.py (fonte unica)
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────
