@@ -33,8 +33,13 @@ Thumbs.db
 pipeline.log
 
 # Artefatos gerados (regeneraveis — nao versionar)
-reports/
+reports/*
 data/raw/__pycache__/
+
+# EDA e dicionario de colunas nao sao regeneraveis por script (gate CRISP-DM
+# exige versionados — ver .claude/rules/dados.md na base)
+!reports/eda_*.md
+!reports/dicionario_*.md
 
 # Planejamento e Estratégia de Mídia (Privado)
 docs/linkedin_post_strategy.md
