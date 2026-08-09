@@ -85,6 +85,15 @@ def coletar_stablecoins_real() -> pd.DataFrame | None:
         ("USDC-USD", "usdc_volume", "usdc_close"),
     ]
 
+    # Erro de coleta conhecido (EDA 2026-08-09, reports/eda_stablecoins_yfinance_real.md):
+    # yfinance retorna USDC-USD volume >80x a mediana da serie (~4,9 bilhoes) em dois
+    # dias consecutivos - 2022-01-26 (83,25 trilhoes) e 2022-01-29 (77,94 trilhoes).
+    # Nao e evento de mercado real - reaparece a cada re-coleta porque vem direto da
+    # API. Vira nulo (nao teto, nao exclusao de linha) na origem, antes de qualquer
+    # coluna derivada (_mm30, stablecoin_vol_total) ser calculada em cima dele - do
+    # contrario o erro se propaga pelas medias moveis por ~30 dias.
+    DATAS_OUTLIER_USDC_VOLUME = [pd.Timestamp("2022-01-26"), pd.Timestamp("2022-01-29")]
+
     frames = {}
     for ticker_id, col_vol, col_close in configs:
         try:
@@ -94,6 +103,11 @@ def coletar_stablecoins_real() -> pd.DataFrame | None:
             df_t.index.name = "date"
             df_t = df_t.rename(columns={"Volume": col_vol, "Close": col_close})
             df_t = df_t[[col_vol, col_close]]
+            if ticker_id == "USDC-USD":
+                datas_presentes = [d for d in DATAS_OUTLIER_USDC_VOLUME if d in df_t.index]
+                if datas_presentes:
+                    df_t.loc[datas_presentes, col_vol] = pd.NA
+                    df_t[col_vol] = pd.to_numeric(df_t[col_vol])
             df_t[f"{col_vol}_mm30"] = df_t[col_vol].rolling(30, min_periods=1).mean()
             frames[ticker_id] = df_t
             print(f"    OK: {ticker_id} -> {len(df_t)} registros")
