@@ -22,8 +22,15 @@ Doc de origem: `docs/wayfinder/shadow-fx-dado-brasil-especifico/SPEC_FINAL.md` �
 
 **Decisão de integração** (Ticket 0004 do wayfinder): se a hipótese confirmar, o sinal Foxbit **soma** como sinal adicional no pipeline — não substitui o volume global. Comparação dos dois é o próprio argumento de negócio (prova quantitativa da limitação hoje só documentada qualitativamente no dicionário de `stablecoins_yfinance_real`).
 
-**Resultado da comparação**: pendente — `src/comparar_correlacao_br.py` ainda não foi executado (Task 4 do plano). Esta seção será atualizada com `r`/`p` reais de `foxbit_vol_total` e `usdt_volume` contra `brl_usd`, e o veredito, assim que o script rodar.
+**Resultado real da comparação** (`src/comparar_correlacao_br.py`, rodado em 2026-08-09, 907 linhas na interseção das 3 séries):
+
+- `brl_usd` x `foxbit_vol_total` (BR real): r=+0,400, p=0,0000 (Moderada, critério do próprio projeto em `utils.calcular_correlacao_spearman`)
+- `brl_usd` x `usdt_volume` (global): r=+0,496, p=0,0000 (Moderada)
+
+**Veredito: Foxbit-BR NÃO superou o sinal global** — critério de sucesso definido na sabatina (`|r(foxbit)| > |r(global)|`) não foi atingido. Mas o resultado não é nulo: r=0,40 é correlação real, significativa, e classificada "Moderada" pelo próprio critério do projeto — só mais fraca que o global (0,496).
+
+**Leitura pro objetivo maior do projeto**: dado que Foxbit é só ~41% do mercado BR (não 100%), uma correlação de 0,40 vs 0,496 do agregado global é um resultado razoável, não uma rejeição da hipótese "dado Brasil-específico importa". Sugere que o volume global já capta bem o comportamento brasileiro (o Brasil pode ser uma fração grande o suficiente do volume USDT/USDC mundial pra já se refletir no agregado), e que uma única exchange, mesmo grande, é amostra parcial demais pra superar isso sozinha. Próximo passo, se a direção for adiante, seria agregar múltiplas exchanges BR (Mercado Bitcoin, Binance BR, etc.) antes de comparar de novo — não descartar a direção com 1 fonte só.
 
 ## Features criadas
 
-Nenhuma nesta rodada — escopo definido na sabatina foi só coleta + comparação, sem mexer no IRF v2/ADR-0003 (`docs/wayfinder/shadow-fx-dado-brasil-especifico/0004-integracao-no-pipeline.md`).
+Nenhuma nesta rodada — escopo definido na sabatina foi só coleta + comparação, sem mexer no IRF v2/ADR-0003 (`docs/wayfinder/shadow-fx-dado-brasil-especifico/0004-integracao-no-pipeline.md`). Resultado negativo (não superou) reforça que não há justificativa ainda pra criar feature nova a partir deste dataset sozinho no índice formal.
