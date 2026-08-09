@@ -178,8 +178,9 @@ A v2 eliminou todos os mocks utilizando fontes públicas e gratuitas:
 | DXY, VIX, S&P500 | yfinance | 1.276 dias |
 | Interesse em USDT no Brasil | Google Trends (`geo='BR'`) | 183 semanas |
 | Atas do Copom | Scraping BCB | 27 reuniões |
+| Volume USDT/USDC na Foxbit (BR) | API pública Foxbit | 1.277 dias |
 
-**Limitação residual:** Dados on-chain georreferenciados (Chainalysis, Glassnode Pro) ainda estão em tier pago. O Google Trends (`geo=BR`) é o proxy metodologicamente mais próximo do que o paper original utilizou — e a cadeia de 5 evidências (ver Fase 1-C) demonstra que esse proxy é robusto.
+**Limitação residual:** Dados on-chain georreferenciados (Chainalysis, Glassnode Pro) ainda estão em tier pago. O Google Trends (`geo=BR`) é o proxy metodologicamente mais próximo do que o paper original utilizou — e a cadeia de 5 evidências (ver Fase 1-C) demonstra que esse proxy é robusto. Em 2026-08-09 testamos uma alternativa mais direta — volume real de uma exchange brasileira (Foxbit) — ver seção **🇧🇷 Experimento: Dado Brasil-Específico** abaixo.
 
 ---
 
@@ -198,6 +199,8 @@ shadow_fx_terminal/
 │   ├── utils.py                 ← ⭐ Core: IRF v1+v2, correlações, carregamento de dados
 │   ├── coletar_dados.py         ← Coleta v1: câmbio BRL/USD (yfinance)
 │   ├── coletar_google_trends_br.py ← v2: 183 semanas de interesse BR por USDT
+│   ├── coletar_foxbit.py        ← Dado Brasil-específico: volume real Foxbit (API pública, paginada)
+│   ├── comparar_correlacao_br.py ← Compara correlação Foxbit-BR vs volume global
 │   ├── analise_correlacao.py    ← ⭐ Cadeia de 5 evidências (script executável)
 │   ├── validacao_estatistica.py ← Correlação Spearman bruta + parcial por semestre
 │   ├── validacao_atribuicao_geografica.py ← Teste de viés geográfico (Lead-Lag + DXY)
@@ -212,6 +215,14 @@ shadow_fx_terminal/
 │   ├── 02_indice_risco_fiscal.ipynb  ← Fase 2: Construção do IRF
 │   └── 03_motor_compliance.ipynb    ← Fase 3: Pipeline AML e métricas
 │
+├── docs/
+│   ├── adr/                     ← 5 Architecture Decision Records (decisões + trade-offs)
+│   └── wayfinder/                ← Decomposição de escopo nebuloso (ex.: dado Brasil-específico)
+│
+├── reports/                     ← EDA + dicionário de colunas por dataset (gate CRISP-DM)
+│   ├── eda_<dataset>.md          ← 8 checagens obrigatórias (duplicata, nulo, outlier, redundância...)
+│   └── dicionario_<dataset>.md   ← Colunas + conexão com objetivo de negócio + features criadas
+│
 ├── data/
 │   ├── raw/                     ← Dados brutos (não versionados — ver .gitignore)
 │   │   ├── cambio_brl_usd.csv            ← BRL/USD real (yfinance, Jan/2022–Jun/2025)
@@ -220,7 +231,8 @@ shadow_fx_terminal/
 │   │   ├── variaveis_globais.csv         ← DXY, VIX, S&P500 (yfinance)
 │   │   ├── brl_ajustado_dxy.csv          ← BRL/USD descontado o efeito do DXY
 │   │   ├── google_trends_br_stablecoin.csv ← 183 semanas geo=BR
-│   │   └── atas_copom_index.csv          ← 27 reuniões Copom 2022–2025
+│   │   ├── atas_copom_index.csv          ← 27 reuniões Copom 2022–2025
+│   │   └── foxbit_brl.csv                ← Volume real USDT/USDC na Foxbit (1.277 dias)
 │   └── processed/
 │       ├── dataset_mestre_v2.csv         ← ⭐ Dataset unificado (7 fontes reais)
 │       ├── dataset_irf_completo.csv      ← IRF v1 diário
@@ -234,7 +246,10 @@ shadow_fx_terminal/
 │   └── scaler.joblib            ← StandardScaler (Training-Serving Parity)
 │
 ├── tests/
-│   └── test_utils.py            ← 18 testes unitários (v1 + v2 + integração)
+│   ├── test_utils.py             ← IRF v1+v2, correlações, dataset mestre
+│   ├── test_pipeline_compliance.py ← Camada 1 (regras BCB), features, XAI, fallback
+│   └── test_agente_rag.py        ← Camada 3, fallback heurístico sem LLM
+│   (59 testes no total)
 │
 └── reports/                     ← Visualizações geradas
     ├── grafico_correlacao.png
@@ -288,6 +303,10 @@ python src/scraper_copom.py
 
 # Google Trends Brasil — interesse em USDT/stablecoin (geo=BR)
 python src/coletar_google_trends_br.py
+
+# Volume real da Foxbit (dado Brasil-específico, API pública gratuita)
+python src/coletar_foxbit.py
+python src/comparar_correlacao_br.py   # compara correlação Foxbit-BR vs volume global
 ```
 
 ### 4. Rodar as Análises
@@ -310,7 +329,7 @@ python src/pipeline_compliance.py       # 3 camadas → resultado_compliance.csv
 
 ### 6. Rodar os Testes
 ```bash
-python -m pytest tests/ -v             # 18 testes unitários
+python -m pytest tests/ -v             # 59 testes unitários
 ```
 
 ---
@@ -429,6 +448,29 @@ Sistemas de compliance antigos baseados apenas em regras (ex: "Flag se > R$ 10.0
 
 Essa abordagem AI Scientist reduz drasticamente a fadiga do time de operações e mira como um laser no verdadeiro alvo das regulações cambiais.
 
+### 🧬 Governança de Dados — Gate CRISP-DM (EDA + Dicionário de Colunas)
+
+Todo dataset bruto deste projeto passa por um gate obrigatório antes de virar feature: **EDA sistemática** (8 checagens fixas — duplicata, coluna constante, sentinela, outlier implausível, nulo, redundância, relação com o alvo) seguida de um **dicionário de colunas** com 3 seções — significado de cada coluna, conexão explícita com a hipótese de negócio, e features criadas. Não é burocracia decorativa: foi esse processo que achou o próximo item.
+
+**Achado real, 2026-08-09 — outlier corrigido na fonte:** a EDA de `stablecoins_yfinance_real.csv` encontrou `usdc_volume` em **2 dias** (26 e 29 de janeiro de 2022) com valor ~80× a mediana da série — erro de coleta da API do yfinance, não evento de mercado real. Corrigido em `src/coletar_dados.py` (nulificado na origem, não em pós-processamento, pra sobreviver a re-coleta), com checagem prévia de que o erro **não afetava nenhuma métrica já publicada** — o R²=0,72 do IRF v2 usa só `usdt_volume`, nunca `usdc_volume`.
+
+**Outros achados da auditoria:** 3 cadeias de redundância de coluna documentadas (ex.: `brl_usd` duplicado entre `cambio_brl_usd.csv` e `brl_ajustado_dxy.csv`) e 2 colunas coletadas e nunca consumidas por nenhum script (`expectativa_ipca_12m`, `sp500`) — achadas via grep real no código, não suposição.
+
+### 🇧🇷 Experimento: Dado Brasil-Específico (Foxbit)
+
+O volume de USDT/USDC usado no projeto (`stablecoins_yfinance_real.csv`) é **global** — nenhum dado on-chain isolado permite identificar se foi o Brasil que comprou. O Google Trends `geo=BR` (Fase 1-C) já mitiga isso parcialmente com proxy de *interesse de busca*. Em 2026-08-09 testamos ir além: dado de **transação real** de uma exchange brasileira.
+
+**Processo** (decomposto via Wayfinder antes de especificar — 4 tickets: objetivo, fontes candidatas, viabilidade, integração): avaliamos Google Trends (já em uso), Foxbit, CoinGecko, bitValor, e o novo registro de VASP no Bacen (Resoluções BCB 519-521/2026) — este último descartado por não ser retroativo a 2022-2025 (reporte só começa em maio/2026). **Foxbit venceu**: exchange brasileira com ~41% do volume USDT/USDC negociado no país, API pública gratuita, sem autenticação, com histórico confirmado por chamada real cobrindo 2022-2025 sem gap.
+
+**Resultado da comparação** (Spearman, 907 dias na interseção das séries):
+
+| Sinal | r | Força |
+|:---|:---:|:---:|
+| Volume global (`usdt_volume`, yfinance) | **+0,496** | Moderada |
+| Volume Foxbit-BR (`foxbit_vol_total`) | +0,400 | Moderada |
+
+**O sinal Foxbit-BR não superou o volume global** — resultado negativo, reportado sem forçar uma conclusão mais bonita do que os dados sustentam. Leitura: uma única exchange (mesmo ~41% do mercado) é amostra parcial demais pra superar um agregado global que, aparentemente, já capta razoavelmente bem o comportamento brasileiro. Caminho pra ir além, se a direção institucional avançar: agregar múltiplas exchanges BR antes de re-testar — não descartar a hipótese com 1 fonte só. Detalhes completos em `docs/wayfinder/shadow-fx-dado-brasil-especifico/SPEC_FINAL.md` e `reports/dicionario_foxbit_brl.md`.
+
 ### Fase 4 — Dashboard Streamlit e FastAPI Backend
 
 A Fase 4 materializa o motor de compliance em uma interface visual de nível de produção, seguindo as melhores práticas de Engenharia de Software (separação entre backend e frontend):
@@ -489,6 +531,7 @@ Como parte da visão de produto e maturidade de engenharia, as seguintes melhori
 - **Engenharia de Software:** Implementação de pipeline CI/CD (GitHub Actions) e substituição de `print` por módulo `logging` estruturado.
 - **Engenharia de Dados:** Validação de schemas ao carregar CSVs (via Pandera) e migração do armazenamento para formato `.parquet`.
 - **Economia:** Incorporação do **CDS 5Y** (Credit Default Swap) como proxy mais rápido e sensível do que a Dívida/PIB mensal.
+- **Dado Brasil-específico:** Agregar múltiplas exchanges BR (Mercado Bitcoin, Binance BR) além da Foxbit — o experimento de 2026-08-09 mostrou que 1 exchange sozinha não supera o sinal global, mas não descarta a direção.
 - **Product Management:** **Explainable AI (XAI)** para justificar alertas em linguagem natural e **Geração Automatizada de Rascunho COAF (PDF)**, tornando o alerta 100% acionável para o analista de compliance.
 
 ---
@@ -502,6 +545,7 @@ Como parte da visão de produto e maturidade de engenharia, as seguintes melhori
 - [x] **Fase 4:** Streamlit Dashboard — Interface visual premium
 - [x] **Fase 4:** Testes unitários (`pytest`) implementados e validados
 - [x] **Fase 5:** Agente RAG (Camada 3) — `agente_rag.py` com LLM lendo Atas do Copom para gerar relatórios COAF (inclui arquitetura de *Fallback MLOps* para indisponibilidade da API).
+- [x] **Fase 6:** Governança de dados (gate CRISP-DM) — EDA + dicionário de colunas nos 5 datasets originais + Foxbit; 1 bug de dado real corrigido; experimento de dado Brasil-específico rodado e documentado (resultado negativo, honesto).
 
 ---
 
