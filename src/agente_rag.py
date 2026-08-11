@@ -94,6 +94,37 @@ Responda com: SUSPEITA / NORMAL / REQUER_INVESTIGACAO e justifique em 2 linhas.
 """.strip()
 
 
+def gerar_rascunho_coaf(
+    user_id: str,
+    valor_brl: float,
+    wallets_unicas: int,
+    hora: int,
+    alerta: str,
+    explicacao_xai: str,
+    irf_contexto: float,
+    score: float,
+) -> str:
+    """Gera o rascunho de Relatorio de Atividade Suspeita (RAS) pro COAF.
+
+    Fonte unica — antes duplicado, quase identico, em api.py e app.py.
+    """
+    return (
+        f"RELATÓRIO DE ATIVIDADE SUSPEITA (RAS) - RASCUNHO\n"
+        f"--------------------------------------------------\n"
+        f"ID USUÁRIO: {user_id}\n"
+        f"DATA DO ALERTA: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M')}\n"
+        f"RISCO DETECTADO: NÍVEL {alerta}\n\n"
+        f"DESCRIÇÃO DA OPERAÇÃO:\n"
+        f"Transferência de R$ {valor_brl:,.2f} fragmentada em {wallets_unicas} carteiras de destino.\n"
+        f"Horário da operação: {hora}h.\n\n"
+        f"JUSTIFICATIVA DO MOTOR MLOPS (XAI):\n"
+        f"{explicacao_xai}\n\n"
+        f"AVALIAÇÃO DE CONTEXTO MACROECONÔMICO:\n"
+        f"Índice de Risco Fiscal (IRF) no momento: {irf_contexto}/100.\n"
+        f"O sistema indica desvio padrão comportamental com score anômalo de {score}/100."
+    )
+
+
 def julgar_transacao_llm(transacao: dict) -> str:
     """
     Envia a transação para o LLM atuar como juiz e gerar o COAF.

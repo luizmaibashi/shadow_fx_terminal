@@ -252,7 +252,7 @@ def score_transacao(tx: TransacaoInput):
         normalizar_score_anomalia, carregar_calibracao_score,
         gerar_explicacao_xai, LIMITE_BCB_BRL,
     )
-    from agente_rag import preparar_prompt_llm
+    from agente_rag import preparar_prompt_llm, gerar_rascunho_coaf
 
     features_scaled = _scaler.transform(features)
     score_bruto = _modelo.score_samples(features_scaled)[0]
@@ -319,20 +319,10 @@ def score_transacao(tx: TransacaoInput):
     # Ação PM: Rascunho COAF Automático (para casos suspeitos)
     rascunho_coaf = None
     if alerta in ["AMARELO", "VERMELHO"]:
-        rascunho_coaf = (
-            f"RELATÓRIO DE ATIVIDADE SUSPEITA (RAS) - RASCUNHO\n"
-            f"--------------------------------------------------\n"
-            f"ID USUÁRIO: {tx.user_id}\n"
-            f"DATA DO ALERTA: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M')}\n"
-            f"RISCO DETECTADO: NÍVEL {alerta}\n\n"
-            f"DESCRIÇÃO DA OPERAÇÃO:\n"
-            f"Transferência de R$ {tx.valor_brl:,.2f} fragmentada em {tx.wallets_unicas} carteiras de destino.\n"
-            f"Horário da operação: {tx.hora}h.\n\n"
-            f"JUSTIFICATIVA DO MOTOR MLOPS (XAI):\n"
-            f"{explicacao}\n\n"
-            f"AVALIAÇÃO DE CONTEXTO MACROECONÔMICO:\n"
-            f"Índice de Risco Fiscal (IRF) no momento: {tx.irf_contexto}/100.\n"
-            f"O sistema indica desvio padrão comportamental com score anômalo de {score_norm}/100."
+        rascunho_coaf = gerar_rascunho_coaf(
+            user_id=tx.user_id, valor_brl=tx.valor_brl, wallets_unicas=tx.wallets_unicas,
+            hora=tx.hora, alerta=alerta, explicacao_xai=explicacao,
+            irf_contexto=tx.irf_contexto, score=score_norm,
         )
 
     return ScoreResponse(

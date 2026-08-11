@@ -11,10 +11,7 @@ Execute: streamlit run app.py
 import sys
 import warnings
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import matplotlib.gridspec as gridspec
 import streamlit as st
 from pathlib import Path
 
@@ -23,8 +20,9 @@ warnings.filterwarnings("ignore")
 PROJECT_ROOT = Path(__file__).parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from utils import DATA_PROC, PROJECT_ROOT as PROJ_ROOT, calcular_irf_v2
+from utils import DATA_PROC, PROJECT_ROOT as PROJ_ROOT
 from pipeline_compliance import gerar_explicacao_xai
+from agente_rag import preparar_prompt_llm, gerar_rascunho_coaf
 
 # ── Configuração da página ────────────────────────────────────────────
 
@@ -338,10 +336,14 @@ elif "Compliance Scanner" in pagina:
     if submitted:
         # Regras BCB (Camada 1)
         razoes_c1 = []
-        if valor_brl >= 10000:  razoes_c1.append("R1: Valor ≥ R$10k")
-        if 8500 <= valor_brl < 10000: razoes_c1.append("R4: Fracionamento suspeito")
-        if hora <= 5 and valor_brl > 5000: razoes_c1.append("R5: Madrugada + valor alto")
-        if wallets > 5: razoes_c1.append("R3: Muitas wallets no dia")
+        if valor_brl >= 10000:
+            razoes_c1.append("R1: Valor ≥ R$10k")
+        if 8500 <= valor_brl < 10000:
+            razoes_c1.append("R4: Fracionamento suspeito")
+        if hora <= 5 and valor_brl > 5000:
+            razoes_c1.append("R5: Madrugada + valor alto")
+        if wallets > 5:
+            razoes_c1.append("R3: Muitas wallets no dia")
         c1_flag_calc = 1 if razoes_c1 else 0
 
         # Score final simplificado (sem modelo para não depender do servidor)
@@ -367,7 +369,7 @@ elif "Compliance Scanner" in pagina:
             </div>""", unsafe_allow_html=True)
 
         with col_r2:
-            st.markdown(f"**Flags da Camada 1 (Regras BCB):**")
+            st.markdown("**Flags da Camada 1 (Regras BCB):**")
             if razoes_c1:
                 for r in razoes_c1:
                     st.error(f"🚨 {r}")
@@ -382,9 +384,14 @@ elif "Compliance Scanner" in pagina:
             "c1_razoes": ", ".join(razoes_c1) if razoes_c1 else "nenhuma",
             "c2_score_anomalia": score_base,
             "irf_contexto": irf_ctx,
-            "wallets_unicas": wallets
+            "wallets_unicas": wallets,
+            "user_id": user_id,
+            "valor_brl": valor_brl,
+            "n_transacoes_dia": n_tx_dia,
+            "entropia_wallets": entropia,
         }
-        explicacao = gerar_explicacao_xai(pd.Series(row_dict))
+        transacao_series = pd.Series(row_dict)
+        explicacao = gerar_explicacao_xai(transacao_series)
         
         st.markdown("---")
         st.markdown('<div class="section-title">🧠 Explainable AI (XAI) — Justificativa do Motor</div>', unsafe_allow_html=True)
@@ -395,33 +402,17 @@ elif "Compliance Scanner" in pagina:
             st.markdown("---")
             st.markdown('<div class="section-title">📄 Ação Recomendada</div>', unsafe_allow_html=True)
             with st.expander("Gerar Rascunho de Relatório COAF (RAS)"):
-                rascunho_coaf = (
-                    f"RELATÓRIO DE ATIVIDADE SUSPEITA (RAS) - RASCUNHO\n"
-                    f"--------------------------------------------------\n"
-                    f"ID USUÁRIO: {user_id}\n"
-                    f"DATA DO ALERTA: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M')}\n"
-                    f"RISCO DETECTADO: NÍVEL {alerta}\n\n"
-                    f"DESCRIÇÃO DA OPERAÇÃO:\n"
-                    f"Transferência de R$ {valor_brl:,.2f} fragmentada em {wallets} carteiras de destino.\n"
-                    f"Horário da operação: {hora}h.\n\n"
-                    f"JUSTIFICATIVA DO MOTOR MLOPS (XAI):\n"
-                    f"{explicacao}\n\n"
-                    f"AVALIAÇÃO DE CONTEXTO MACROECONÔMICO:\n"
-                    f"Índice de Risco Fiscal (IRF) no momento: {irf_ctx}/100.\n"
-                    f"O sistema indica desvio padrão comportamental com score anômalo de {score_final}/100."
+                rascunho_coaf = gerar_rascunho_coaf(
+                    user_id=user_id, valor_brl=valor_brl, wallets_unicas=wallets,
+                    hora=hora, alerta=alerta, explicacao_xai=explicacao,
+                    irf_contexto=irf_ctx, score=score_final,
                 )
                 st.text_area("Rascunho Pronto para Cópia:", value=rascunho_coaf, height=300)
                 st.button("📥 Exportar para PDF (Em breve)", disabled=True)
-                
+
             if alerta == "AMARELO":
                 with st.expander("🤖 Prompt para Agente RAG (Camada 3)"):
-                    prompt = (
-                        f"Analise esta transação conforme Resoluções BCB 519-521/2026:\n"
-                        f"Usuário: {user_id} | Valor: R$ {valor_brl:,.2f} | Hora: {hora}h\n"
-                        f"Wallets/dia: {wallets} | Score: {score_final}/100 | IRF: {irf_ctx}/100\n"
-                        f"XAI: {explicacao}\n\n"
-                        f"Responda: SUSPEITA / NORMAL / REQUER_INVESTIGACAO + 2 linhas de justificativa."
-                    )
+                    prompt = preparar_prompt_llm(transacao_series)
                     st.code(prompt, language="text")
 # ════════════════════════════════════════════════════════════════════════
 # PÁGINA 3 — ANÁLISE IRF
