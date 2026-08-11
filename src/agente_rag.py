@@ -73,7 +73,7 @@ def julgar_transacao_llm(transacao: dict) -> str:
     # 1. Recuperação (RAG)
     try:
         data_tx = pd.to_datetime(transacao.get("data", pd.Timestamp.now()))
-    except:
+    except Exception:
         data_tx = pd.Timestamp.now()
         
     contexto_macro = recuperar_contexto_copom(data_tx)

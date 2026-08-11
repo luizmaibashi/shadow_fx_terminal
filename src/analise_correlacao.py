@@ -30,8 +30,6 @@ Funciona como documentacao executavel das analises.
 import sys
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 from pathlib import Path
 
 # Resolve src/ tanto quando executado como script (src/) quanto como notebook (notebooks/)
@@ -41,8 +39,7 @@ if str(_src) not in sys.path:
     sys.path.insert(0, str(_src))
 
 from utils import (
-    DATA_RAW, DATA_PROC,
-    carregar_dataset_mestre,
+    DATA_RAW, carregar_dataset_mestre,
     calcular_correlacao_spearman,
     calcular_correlacao_parcial,
     correlacao_por_semestre,
@@ -158,7 +155,7 @@ if trends_path.exists():
     df_geo = df_geo.dropna(subset=['brl_usd', 'USDT'])
 
     r_geo = calcular_correlacao_spearman(df_geo['brl_usd'], df_geo['USDT'])
-    print(f"=== GOOGLE TRENDS geo=BR - USDT x BRL/USD ===")
+    print("=== GOOGLE TRENDS geo=BR - USDT x BRL/USD ===")
     print(f"  Semanas: {len(df_geo)}")
     print(f"  Coef Spearman: {r_geo['coef']}  sig={r_geo['significativo']}  {r_geo['forca']}")
 

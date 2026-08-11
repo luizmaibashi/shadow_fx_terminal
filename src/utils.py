@@ -16,7 +16,6 @@ v2 (2026-05-05):
     - Adicionada calcular_brl_ajustado_dxy() para isolar o sinal de risco local
 """
 
-import warnings
 import pandas as pd
 import numpy as np
 from scipy.stats import spearmanr
@@ -205,7 +204,6 @@ def calcular_correlacao_parcial(
     coef_bruto, _ = spearmanr(df_temp['x'], df_temp['y'])
 
     # Resíduos via regressão linear de ranks
-    from numpy.polynomial.polynomial import polyfit
     rank_x = df_temp['x'].rank()
     rank_y = df_temp['y'].rank()
     rank_z = df_temp['z'].rank()

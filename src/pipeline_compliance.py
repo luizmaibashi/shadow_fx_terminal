@@ -29,19 +29,15 @@ Principios de Engenharia:
 
 import os
 import sys
-import json
 import joblib
 import logging
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from datetime import datetime
-from sklearn.ensemble import IsolationForest
-from sklearn.preprocessing import StandardScaler
 
 # Adicionar src ao path para imports relativos funcionarem
 sys.path.insert(0, str(Path(__file__).parent))
-from utils import PROJECT_ROOT, DATA_RAW, FEATURES_ML, IRF_LAG_DAYS
+from utils import PROJECT_ROOT, FEATURES_ML, IRF_LAG_DAYS
 
 # Configuração de Logging Profissional
 logging.basicConfig(

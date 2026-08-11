@@ -27,7 +27,7 @@ import pandas as pd
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from utils import DATA_RAW, PROJECT_ROOT
+from utils import PROJECT_ROOT
 
 OUTPUT_PATH = PROJECT_ROOT / "data" / "processed" / "transacoes_simuladas.csv"
 
@@ -151,7 +151,7 @@ def gerar_dataset() -> pd.DataFrame:
 
     df.to_csv(OUTPUT_PATH, index=False, encoding="utf-8")
     print(f"Dataset gerado: {len(df)} transacoes -> {OUTPUT_PATH}")
-    print(f"\nDistribuicao por tipo:")
+    print("\nDistribuicao por tipo:")
     print(df["tipo_usuario"].value_counts().to_string())
     print(f"\nValor total movimentado: R$ {df['valor_brl'].sum():,.0f}")
 

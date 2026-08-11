@@ -1,0 +1,14 @@
+# Config enxuta de proposito: pega bug real (import nao usado, nome indefinido,
+# redefinicao acidental), nao briga por estilo (imports desordenados, f-string
+# sem placeholder, syntax legada de tipagem). Regras "bandit"/"bugbear" (blind
+# except, bare except) ficam de fora por ora — o projeto usa fallback
+# proposital (Graceful Degradation, Camada 3) que soa como "except" solto sem
+# ser bug.
+line-length = 120
+
+[lint]
+select = ["E", "F"]
+ignore = [
+    "E501",  # linha longa — nao e bug, e docstring/URL
+    "E402",  # import fora do topo — estilo deliberado nos testes (import perto do teste que cobre)
+]

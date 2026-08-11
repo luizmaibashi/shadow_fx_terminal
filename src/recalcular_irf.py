@@ -24,7 +24,6 @@ Execute: python src/recalcular_irf.py
 import sys
 import json
 import pandas as pd
-import numpy as np
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))

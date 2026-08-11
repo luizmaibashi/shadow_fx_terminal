@@ -35,9 +35,7 @@ logger = logging.getLogger("ShadowFX-API")
 # Adicionar src ao path para imports relativos funcionarem
 sys.path.insert(0, str(Path(__file__).parent))
 from utils import (
-    PROJECT_ROOT, DATA_PROC, REPORTS_DIR, FEATURES_ML,
-    calcular_indice_risco_fiscal,
-    calcular_irf_v2,
+    PROJECT_ROOT, DATA_PROC,
 )
 
 MODELS_DIR = PROJECT_ROOT / "models"

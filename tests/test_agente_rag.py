@@ -7,7 +7,6 @@ Execute: pytest tests/ -v
 """
 
 import sys
-import pytest
 import pandas as pd
 from pathlib import Path
 
@@ -45,14 +44,12 @@ class TestRecuperacaoContexto:
     def test_contexto_indisponivel_sem_arquivo(self):
         """Sem arquivo de atas, deve retornar string padrao."""
         from agente_rag import recuperar_contexto_copom
-        import pandas as pd
         contexto = recuperar_contexto_copom(pd.Timestamp("2024-06-15"))
         assert isinstance(contexto, str)
         assert len(contexto) > 0
 
     def test_formato_contexto(self):
         from agente_rag import recuperar_contexto_copom
-        import pandas as pd
         contexto = recuperar_contexto_copom(pd.Timestamp("2024-06-15"))
         # Deve retornar ou "indisponivel" ou conter "Copom"
         assert ("indisponível" in contexto.lower() or

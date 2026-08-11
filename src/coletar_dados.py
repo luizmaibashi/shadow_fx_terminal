@@ -21,12 +21,8 @@ Execute: python src/coletar_dados.py
 """
 
 import sys
-import time
-import requests
 import pandas as pd
-import numpy as np
 import yfinance as yf
-from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))

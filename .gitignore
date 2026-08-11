@@ -1,9 +1,13 @@
 # Dados e Modelos (Segurança de IP)
 data/raw/*.csv
 data/processed/*.csv
+data/processed/irf_v2_calibracao.json
 models/*.joblib
 models/*.pkl
 models/*.h5
+
+# Ferramentas locais de geracao de assets (nao sao codigo de producao)
+src/generate_dark_pdf.py
 
 # Python
 __pycache__/

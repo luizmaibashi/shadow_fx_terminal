@@ -17,7 +17,6 @@ import requests
 import pandas as pd
 from pathlib import Path
 from bs4 import BeautifulSoup
-from datetime import datetime
 
 # Path central do utils
 import sys
@@ -124,7 +123,7 @@ def extrair_texto_ata(url: str) -> str:
         texto = body.get_text(separator="\n", strip=True) if body else ""
     
     # Limpeza: remover linhas muito curtas (menus, rodapes) e linhas duplicadas
-    linhas = [l.strip() for l in texto.split("\n") if len(l.strip()) > 30]
+    linhas = [linha.strip() for linha in texto.split("\n") if len(linha.strip()) > 30]
     texto_limpo = "\n".join(linhas)
     
     return texto_limpo

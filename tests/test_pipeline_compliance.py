@@ -10,7 +10,7 @@ import pytest
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
@@ -66,7 +66,7 @@ class TestCamada1:
             "wallet_destino": ["wallet_1"],
         })
         df = camada1_filtros_bcb(df)
-        assert df["c1_flag"].iloc[0] == True
+        assert df["c1_flag"].iloc[0]
         assert "R1" in df["c1_razoes"].iloc[0]
 
     def test_fracionamento(self):
@@ -78,7 +78,7 @@ class TestCamada1:
             "wallet_destino": ["wallet_1"],
         })
         df = camada1_filtros_bcb(df)
-        assert df["c1_flag"].iloc[0] == True
+        assert df["c1_flag"].iloc[0]
         assert "R4" in df["c1_razoes"].iloc[0]
 
     def test_madrugada(self):
@@ -90,7 +90,7 @@ class TestCamada1:
             "wallet_destino": ["wallet_1"],
         })
         df = camada1_filtros_bcb(df)
-        assert df["c1_flag"].iloc[0] == True
+        assert df["c1_flag"].iloc[0]
 
     def test_transacao_normal(self):
         """Transacao normal nao deve flagar."""
@@ -101,7 +101,7 @@ class TestCamada1:
             "wallet_destino": ["wallet_1"],
         })
         df = camada1_filtros_bcb(df)
-        assert df["c1_flag"].iloc[0] == False
+        assert not df["c1_flag"].iloc[0]
 
     def test_muitas_wallets_no_dia(self):
         """R3: >5 wallets no mesmo dia deve flagar."""
@@ -228,7 +228,6 @@ class TestFallbackPipeline:
 
     def test_camada3_fallback_sem_llm(self, df_transacoes, df_irf):
         """Camada 3 deve usar fallback quando LLM desabilitado."""
-        from pipeline_compliance import LLM_JUDGE_ENABLED
         # O teste verifica que o pipeline nao quebra sem LLM
         from pipeline_compliance import executar_pipeline
         df = executar_pipeline(df_transacoes, df_irf)

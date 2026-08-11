@@ -24,3 +24,4 @@ pytrends
 jupytext
 pytest-cov
 coverage
+ruff
