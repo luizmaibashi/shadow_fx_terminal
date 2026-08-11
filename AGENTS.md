@@ -128,3 +128,4 @@ Nenhum outro débito técnico aberto no momento — os 4 que restavam (CI/CD, ti
 - Resoluções BCB 519, 520, 521/2025 (vigor fev/2026) — cria a obrigação legal de AML pra VASPs.
 - Capital mínimo pra VASP: R$ 10,8 milhões (fonte: NDM Advogados).
 - Preço de mercado dos incumbentes: Chainalysis US$50-200K/ano, TRM Labs €60-150K/ano, Elliptic €80-180K/ano (fonte: Costbench, Finconduit).
+- Dinamismo regulatório (2026-08-11): ~7 mudanças regulatórias relevantes em ~18 meses (Lei 14.478/2022 → 4 consultas públicas 2023-2024 → Resoluções 519/520/521 → Resolução 561 → IN 701/2026 → IOF sobre stablecoin) — fonte: Agência Brasil, Mattos Filho, Forbes. Nenhuma evidência pública de Chainalysis/TRM/Elliptic priorizando o Brasil especificamente. R$ 388bi declarados em cripto por brasileiros em 9 meses de 2025, 70%+ em stablecoins — fonte: Blue Consult. Detalhe completo em `docs/wayfinder/tese-veredito-condicoes/0003-perfil-exchanges-br-nicho.md` (Adendo).
