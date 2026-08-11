@@ -1,10 +1,10 @@
 # Relatório de Auditoria Multidisciplinar (v2) — Shadow FX Terminal
 **Data da Auditoria:** 17 de Maio de 2026  
-**Status do Projeto:** 🟢 ENTERPRISE-READY (100% Validado)
+**Status do Projeto:**  ENTERPRISE-READY (100% Validado)
 
 ---
 
-## 🏛️ 1. Perspectiva do Mercado Financeiro Internacional & Regulatório
+## ️ 1. Perspectiva do Mercado Financeiro Internacional & Regulatório
 ### 1.1. O Fenômeno de Dolarização Informal via Stablecoins
 O projeto baseia-se na tese do paper de Paulo J. Britto (2026) da OTC Research: stablecoins (USDT/USDC) servem como **"dólar de colchão digital"** para investidores e cidadãos comuns no Brasil como hedge contra a desvalorização do Real.
 *   **Proxy de Demanda Geolocalizada:** Devido à natureza pseudo-anônima da blockchain, o projeto utiliza o **Google Trends Brasil (`geo='BR'`)** como proxy de demanda local.
@@ -21,7 +21,7 @@ As novas resoluções equiparam stablecoins a operações cambiais tradicionais,
 
 ---
 
-## 🧪 2. Perspectiva de Ciência & Engenharia de Dados (CRISP-DM & MLOps)
+##  2. Perspectiva de Ciência & Engenharia de Dados (CRISP-DM & MLOps)
 ### 2.1. O Índice de Risco Fiscal Multidimensional (IRF v2)
 O IRF evoluiu de uma média móvel de 3 variáveis (v1) para um modelo matemático robusto de **6 sinais ortogonais (v2)** com pesos calibrados de forma empiricamente defensável:
 1.  **Dívida Bruta/PIB (Peso 30%):** Métrica de dominância fiscal e risco crônico (`r = +0.707`).
@@ -45,7 +45,7 @@ Implementação impecável do padrão *Cascaded Heuristic Filters* do Stanford C
 
 ---
 
-## 🚀 3. Perspectiva de Product Management (PM), UX & Valor de Negócio
+##  3. Perspectiva de Product Management (PM), UX & Valor de Negócio
 ### 3.1. Tradução Técnica para Valor Real (Explainable AI - XAI)
 Um dos principais gargalos de produtos de compliance baseados em IA é a "caixa-preta". O projeto resolve isso criando a função `gerar_explicacao_xai()` no pipeline.
 *   Em vez de apenas retornar um score genérico, o sistema traduz a pontuação in justificativas in linguagem natural legíveis para analistas regulatórios.
@@ -59,7 +59,7 @@ Um dos principais gargalos de produtos de compliance baseados em IA é a "caixa-
 
 ---
 
-## 🛠️ 4. Auditoria de Execução & Testes Unitários
+## ️ 4. Auditoria de Execução & Testes Unitários
 Executamos o pipeline completo ponta a ponta a partir dos dados brutos com sucesso absoluto:
 1.  **Coleta de Dados (`coletar_dados.py`):** Coletou e gerou todas as séries de câmbio, stablecoins reais, variáveis globais e macro BCB.
 2.  **Scraper Copom (`scraper_copom.py`):** Baixou as atas e, de forma resiliente, indexou as 27 reuniões históricas.
@@ -74,8 +74,37 @@ Executamos o pipeline completo ponta a ponta a partir dos dados brutos com suces
 
 ---
 
-## 🏁 5. Diagnóstico Final & Veredito
-O projeto **Shadow FX Terminal** é um portfólio de **extrema excelência (Top 0.1% de ML / Data Science / Finance)**.
-Ele vai muito além de um portfólio de código: representa uma fusão perfeita de **profundidade econométrica**, **rigor de engenharia de software e MLOps**, e **uma sólida proposta de valor de negócios e design de produto (UX/Actionability)**. 
+##  5. Diagnóstico Final & Veredito
+O projeto **Shadow FX Terminal** demonstra profundidade econométrica real (IRF v2 com 6 sinais ortogonais, testes de estacionaridade, correlação parcial controlando DXY) e uma arquitetura de compliance em cascata bem desenhada (3 camadas, graceful degradation, XAI, training-serving parity via `utils.py`).
 
-Tudo está em perfeita ordem, sincronizado e validado estatisticamente no ambiente real do usuário. O projeto está pronto para produção e homologação profissional.
+A suite de testes passou 33/33 nesta execução — mas **"testes passando" não é o mesmo que "sistema correto"**: ver o Adendo (seção 6) para bugs reais que os 33 testes não pegaram, encontrados numa auditoria posterior. A classificação anterior deste relatório ("ENTERPRISE-READY, 100% Validado, Top 0.1%") foi retirada por superestimar a maturidade do projeto frente ao que a seção 6 encontrou — mantida aqui riscada como registro histórico, não como afirmação atual.
+
+~~O projeto está pronto para produção e homologação profissional.~~ → Está pronto como portfólio técnico sólido, com débitos conhecidos e documentados (ver ADR-0001).
+
+---
+
+## 6. Adendo de Auditoria — 2026-08-10
+
+Numa sessão de correção de bugs, escrutínio direto do código (não apenas rodar a suite existente) encontrou 3 problemas que o veredito original não cobria:
+
+1. **Bug de crash confirmado**: `POST /compliance/score` quebrava com `AttributeError` garantido em qualquer chamada — o schema `TransacaoInput` não declarava `hora` nem `wallets_unicas`, mas o código os usava. Corrigido.
+2. **Lógica duplicada e divergente entre `api.py` e `pipeline_compliance.py`**, em 3 pontos: o prompt do LLM-as-judge, e a fórmula de normalização de score. Consolidado numa fonte única em `pipeline_compliance.py`.
+3. **Bug de calibração que invertia o comportamento central do produto**: a normalização do score do Isolation Forest usava um range fixo hardcoded (`-0,5` a `0,5`) que não batia com a distribuição real do modelo treinado (`-0,65` a `-0,40`). Resultado: **0% das transações caíam em VERDE**, score médio 97/100 — o motor de compliance classificava quase tudo como suspeito, o oposto do que o produto promete. Corrigido calibrando o range empiricamente (percentil 1/99) no momento do treino e salvando como artefato (`models/score_calibracao_v1.joblib`). Distribuição pós-fix: 68% VERDE / 30% AMARELO / 2% VERMELHO — plausível para o perfil dos dados sintéticos.
+
+Nenhum desses 3 problemas quebrava os 33 testes existentes — eles testavam funções isoladas com inputs corretos, não o pipeline ponta a ponta com o schema real da API nem a calibração do modelo treinado. **Lição**: suite verde não substitui leitura crítica do código antes de reivindicar "validado".
+
+~~Também identificado, sem correção nesta rodada: o experimento "Foxbit-BR" e o ADR-0005 citados em sessão anterior (bridge memory) não têm nenhum artefato correspondente no repositório nem no histórico do git — o trabalho relatado como concluído não deixou rastro auditável.~~ **Corrigido na Seção 7**: essa afirmação estava errada — era diagnóstico feito sobre uma cópia local incompleta, sem `.git`. Ambos existem no histórico real.
+
+---
+
+## 7. Adendo de Auditoria — 2026-08-11 (reconciliação com histórico real)
+
+A sessão de 2026-08-10 (Seção 6) rodou numa máquina cuja pasta do projeto **não tinha `.git`** — cópia de arquivos incompleta, sem histórico. Isso produziu 3 erros de diagnóstico que esta seção corrige:
+
+1. **"ADR-0005 e experimento Foxbit-BR não existem" — errado.** Ambos existem no histórico real do GitHub (`origin/main`, commit `1ef7708`), junto com 6 relatórios de EDA, 6 dicionários de coluna, `src/coletar_foxbit.py`, `src/comparar_correlacao_br.py`. Só não estavam nesta máquina.
+2. **"AGENTS.md não existe" — errado.** Já existia, com Linguagem Ubíqua, mapa do projeto e uma regra crítica que a cópia local não tinha: `IRF_LAG_DAYS=14`, lag anti-vazamento de dado macro. Mesclado com as adições desta sessão (não substituído).
+3. **"33/33 testes passing" era a suite incompleta.** Existiam mais 2 arquivos de teste (`test_pipeline_compliance.py`, `test_agente_rag.py`, 26 testes adicionais) nunca rodados nesta máquina. **Suite real: 59/59 passing**, confirmado após a reconciliação.
+
+**Achado mais sério: os 3 bugs corrigidos na Seção 6 eram reais e existiam no código de produção também** (confirmado linha a linha contra `origin/main`) — não eram fantasmas de uma cópia local ruim. Mas **faltava aplicar `IRF_LAG_DAYS`** nos cálculos que geraram os números da Seção 6 e do `TESE.md` — o que significa que aqueles números (precisão, recall, falso positivo) foram calculados com potencial vazamento de dado macro do futuro. Recalculados com o lag correto: o achado central sobrevive, e o trade-off é **menor** do que a versão com vazamento sugeria (falso positivo 2,3x, não 3,5x — ver `TESE.md`, Adendo).
+
+**Lição adicional a "suite verde não substitui leitura crítica"**: nesta sessão, foi **diagnosticar "não existe" sem confirmar via `.git`** que causou o maior desperdício de trabalho — recriar do zero (`AGENTS.md`, análise de ADR-0005) o que já existia, e computar métricas que precisaram ser refeitas. Antes de declarar algo ausente, checar se a cópia local tem histórico de verdade.

@@ -22,3 +22,5 @@ gTTS
 python-bcb
 pytrends
 jupytext
+pytest-cov
+coverage

@@ -94,10 +94,11 @@ _df_irf: Optional[pd.DataFrame] = None
 _df_compliance: Optional[pd.DataFrame] = None
 _modelo = None
 _scaler = None
+_calibracao: Optional[dict] = None
 
 
 def _carregar_dados():
-    global _df_irf, _df_compliance, _modelo, _scaler
+    global _df_irf, _df_compliance, _modelo, _scaler, _calibracao
 
     irf_path = DATA_PROC / "dataset_irf_completo.csv"
     compliance_path = DATA_PROC / "resultado_compliance.csv"
@@ -122,6 +123,9 @@ def _carregar_dados():
         _modelo = joblib.load(modelo_path)
         _scaler = joblib.load(scaler_path)
         logger.info("     Modelo ML e Scaler carregados com sucesso.")
+
+        from pipeline_compliance import carregar_calibracao_score
+        _calibracao = carregar_calibracao_score()
     else:
         logger.warning("     Modelo ML ou Scaler nao encontrados em models/. Execute o pipeline primeiro.")
 
@@ -138,6 +142,8 @@ class TransacaoInput(BaseModel):
     irf_contexto: float = Field(ge=0, le=100, example=75.0)
     entropia_wallets: float = Field(ge=0, le=5, example=3.8)
     c1_flag_int: int = Field(ge=0, le=1, example=1)
+    hora: int = Field(ge=0, le=23, example=2)
+    wallets_unicas: int = Field(ge=1, example=3)
 
 
 class IRFAtualResponse(BaseModel):
@@ -244,10 +250,15 @@ def score_transacao(tx: TransacaoInput):
         tx.valor_brl, tx.n_transacoes_dia, tx.irf_contexto, tx.entropia_wallets
     ]])
 
+    from pipeline_compliance import (
+        normalizar_score_anomalia, carregar_calibracao_score,
+        gerar_explicacao_xai, preparar_prompt_llm, LIMITE_BCB_BRL,
+    )
+
     features_scaled = _scaler.transform(features)
     score_bruto = _modelo.score_samples(features_scaled)[0]
-    score_norm = round(float(100 * (1 - (score_bruto + 0.5))), 1)
-    score_norm = max(0.0, min(100.0, score_norm))
+    calibracao = _calibracao if _calibracao else carregar_calibracao_score()
+    score_norm = round(float(normalizar_score_anomalia(score_bruto, calibracao)), 1)
 
     # Score final composto (C1 + ML)
     score_final = round(score_norm * 0.6 + tx.c1_flag_int * 40.0 * 0.4, 1)
@@ -260,44 +271,51 @@ def score_transacao(tx: TransacaoInput):
     else:
         alerta = "VERDE"
 
-    # Import XAI function from pipeline
-    from pipeline_compliance import gerar_explicacao_xai
-    
     # Criar um dict simulando a linha (Series)
     row_dict = {
         "alerta_final": alerta,
         "c1_razoes": tx.c1_flag_int, # simplificação
         "c2_score_anomalia": score_norm,
         "irf_contexto": tx.irf_contexto,
-        "wallets_unicas": tx.wallets_unicas
+        "wallets_unicas": tx.wallets_unicas,
+        "user_id": tx.user_id,
+        "valor_brl": tx.valor_brl,
+        "n_transacoes_dia": tx.n_transacoes_dia,
+        "entropia_wallets": tx.entropia_wallets,
     }
-    
-    # Mapear c1_flag_int para razao texto para o XAI
+
+    # Mapear c1_flag_int para razao texto para o XAI.
+    # Replica as regras de camada1_filtros_bcb() que dao pra checar com o payload
+    # desta transacao isolada (R1, R3, R4, R5). R2 (volume 30d) exige historico
+    # do usuario que a API nao tem sem persistencia (ver ADR-0001) — nesse caso
+    # cai no fallback generico, e o texto fica menos especifico que o do pipeline batch.
     if tx.c1_flag_int == 1:
-        if tx.valor_brl >= 10000:
-            row_dict["c1_razoes"] = "Valor acima do limite (R$ 10k)"
-        elif tx.hora <= 5 and tx.valor_brl > 5000:
-            row_dict["c1_razoes"] = "Alto valor na madrugada"
-        else:
-            row_dict["c1_razoes"] = "Regra determinística violada"
+        motivos_c1 = []
+        if tx.valor_brl >= LIMITE_BCB_BRL:
+            motivos_c1.append("R1: valor acima do limite (R$ 10k)")
+        if tx.wallets_unicas > 5:
+            motivos_c1.append("R3: mais de 5 wallets distintas no dia")
+        if LIMITE_BCB_BRL * 0.80 <= tx.valor_brl < LIMITE_BCB_BRL:
+            motivos_c1.append("R4: fracionamento suspeito (80-99% do limite)")
+        if tx.hora <= 5 and tx.valor_brl > 5000:
+            motivos_c1.append("R5: alto valor na madrugada")
+        row_dict["c1_razoes"] = " | ".join(motivos_c1) if motivos_c1 else (
+            "Regra determinística violada (possível R2: volume 30d — "
+            "não verificável sem histórico do usuário)"
+        )
     else:
         row_dict["c1_razoes"] = "nenhuma"
 
-    explicacao = gerar_explicacao_xai(pd.Series(row_dict))
+    transacao_series = pd.Series(row_dict)
+    explicacao = gerar_explicacao_xai(transacao_series)
 
     # Razão principal legada (para compatibilidade UI)
     razao = explicacao.split(" | ")[0]
 
-    # Prompt para LLM-as-judge (zona cinza)
+    # Prompt para LLM-as-judge (zona cinza) — mesma função do pipeline offline
     prompt_llm = None
     if alerta == "AMARELO":
-        prompt_llm = (
-            f"Analise esta transação de stablecoin conforme as Resoluções BCB 519-521/2026:\n"
-            f"Usuário: {tx.user_id} | Valor: R$ {tx.valor_brl:,.2f} | Hora: {tx.hora}h\n"
-            f"Wallets/dia: {tx.wallets_unicas} | Score ML: {score_norm}/100 | IRF: {tx.irf_contexto}/100\n"
-            f"XAI: {explicacao}\n"
-            f"Responda: SUSPEITA / NORMAL / REQUER_INVESTIGACAO + 2 linhas de justificativa."
-        )
+        prompt_llm = preparar_prompt_llm(transacao_series)
 
     # Ação PM: Rascunho COAF Automático (para casos suspeitos)
     rascunho_coaf = None

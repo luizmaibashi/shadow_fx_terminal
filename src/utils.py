@@ -51,6 +51,13 @@ FEATURES_ML = [
     "entropia_wallets"
 ]
 
+# NOTA: existem duas features distintas derivadas de "wallet_destino" — nao confundir:
+#   - wallets_unicas  (camada1_filtros_bcb, pipeline_compliance.py): CONTAGEM de wallets
+#     distintas POR DIA. Usada na regra R3 e no XAI. Escopo: 1 usuario, 1 dia.
+#   - entropia_wallets (engenharia_features, pipeline_compliance.py): DISPERSAO estatistica
+#     de wallets no HISTORICO INTEIRO do usuario no dataset. Usada como feature de ML (acima).
+#     Escopo: 1 usuario, todo o periodo simulado — nao e por dia.
+
 # Lag de seguranca para evitar data leakage no IRF:
 # Macrovariaveis (IPCA, Selic, Divida/PIB) sao publicadas com semanas de atraso.
 # Usar IRF[t] no dia exato da transacao pode incluir info que nao era conhecida.
@@ -471,6 +478,15 @@ def calcular_irf_v2(
 
     # Thresholds de normalização calibrados empiricamente (p95 dos dados reais 2022-2025):
     # Cada sinal é mapeado para [0,1] onde 1 = nível de stress do percentil 95.
+    #
+    # DEBITO CONHECIDO: estes divisores sao constantes chumbadas de uma calibracao unica
+    # sobre a janela 2022-2025. Se o dataset crescer (mais anos), ficam desatualizados
+    # silenciosamente — mesma categoria de fragilidade que o score_min/score_max hardcoded
+    # do Isolation Forest tinha antes de ser corrigido (ver carregar_calibracao_score() em
+    # pipeline_compliance.py, calibracao salva como artefato em models/score_calibracao_v1.joblib).
+    # Fix correto: recalcular percentis a cada atualizacao de dado e versionar como artefato,
+    # nao como constante em codigo. Nao implementado ainda — escopo de ADR + mudanca em
+    # recalcular_irf.py, nao fix pontual.
 
     # 1. Sinal Dívida/PIB: variação mensal (p95 ≈ 0.10 pp)
     #    Dividimos por 0.12 para que p95 ≈ 0.83 (abaixo de 1, mas próximo)

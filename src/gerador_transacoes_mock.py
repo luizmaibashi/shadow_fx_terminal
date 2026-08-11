@@ -71,13 +71,14 @@ def gerar_usuario(
             n_frac = np.random.randint(2, 6)
             for f in range(n_frac):
                 valor = np.random.uniform(8_500, LIMITE_BCB_BRL - 100)
+                ts_frac = timestamp + pd.Timedelta(minutes=f * np.random.randint(5, 30))
                 registros.append({
                     "user_id"          : user_id,
                     "tipo_usuario"     : tipo,
-                    "timestamp"        : timestamp + pd.Timedelta(minutes=f * np.random.randint(5, 30)),
+                    "timestamp"        : ts_frac,
                     "valor_brl"        : round(valor, 2),
                     "wallet_destino"   : np.random.choice(wallets_destino),
-                    "hora"             : hora,
+                    "hora"             : ts_frac.hour,
                     "eh_fracionamento" : True,
                 })
         else:

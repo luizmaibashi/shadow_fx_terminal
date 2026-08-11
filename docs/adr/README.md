@@ -8,6 +8,8 @@
 | [0002](0002-gemini-flash-llm-judge.md) | Gemini 2.5 Flash como LLM-as-Judge | Accepted | 2026-05-17 |
 | [0003](0003-irf-v2-seis-sinais.md) | IRF v2 com 6 Sinais Ortogonais | Accepted | 2026-05-05 |
 | [0004](0004-fastapi-streamlit-architecture.md) | FastAPI + Streamlit como Stack de Deploy | Accepted | 2026-05-10 |
+| [0005](0005-coletores-descentralizados-sem-orquestrador.md) | Coletores Descentralizados, sem Orquestrador Central | Accepted | 2026-08-09 |
+| [0006](0006-persistencia-csv-em-memoria.md) | Persistência em CSV/joblib em Memória (não migrar pra banco agora) | Accepted | 2026-08-10 |
 
 ---
 

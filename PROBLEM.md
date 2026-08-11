@@ -4,7 +4,7 @@
 
 ---
 
-## 💡 A Origem: Dois Catalisadores, Um Projeto
+##  A Origem: Dois Catalisadores, Um Projeto
 
 ### Catalisador 1 — O Paper
 Tudo começou com a leitura do paper *"Dolarização Informal: Stablecoins como resposta à instabilidade monetária brasileira"* (Paulo J. Britto, OTC Research, 2026).
@@ -109,18 +109,34 @@ Injetar o Índice de Risco Fiscal como variável do modelo de ML transforma um c
 
 ---
 
-## 💰 Valor de Negócio & ROI
+## ⚠️ Trade-off Real Medido — o Preço da Inovação Central
+
+A seção anterior descreve o que o IRF **deveria** fazer: distinguir Cidadão A de Criminoso B sem custo para nenhum dos dois. Testado contra o rótulo de verdade do dataset sintético (`docs/tese/shadow-fx-vantagem-competitiva/TESE.md`, veredito 2026-08-10), a realidade tem um trade-off que a narrativa acima não capturava:
+
+| Métrica | Sem IRF | Com IRF |
+|---|---|---|
+| Precisão (dos flagados, % que eram fraude real) | 35,9% | **45,2%** ✅ |
+| Recall (dos fraudadores reais, % detectados) | 34,4% | **43,9%** ✅ |
+| Falso positivo (poupador legítimo flagado à toa) | 1,5% | **3,5%** ⚠️ (2,3x) |
+
+**O que isso significa, sem retórica:** o IRF pega mais fracionador de verdade — mas em troca, incomoda mais Cidadão A (o "Poupador Assustado" que este projeto existe pra proteger). Não é um resultado que invalida o projeto — a tese sobreviveu ao teste de falsificação (precisão e recall melhoram, não é ruído aleatório) — mas é uma tensão real entre os dois objetivos declarados na Pergunta 2, não uma solução que resolve os dois sem custo.
+
+**Decisão registrada:** aceitar o trade-off como está e documentá-lo (não tunar o modelo pra reduzir o falso positivo), porque o dataset é sintético — otimizar contra ele arrisca ajustar pra ruído que não existe em produção real. Ver `docs/wayfinder/tese-veredito-condicoes/0001-tunar-ou-aceitar-trade-off.md`.
+
+---
+
+##  Valor de Negócio & ROI
 
 | Stakeholder | Problema Resolvido | Valor Gerado |
 |:---|:---|:---|
-| **Corretoras de Cripto** | Falsos positivos bloqueando clientes legítimos | Redução da fadiga de analistas + evitar multas do BCB |
-| **Bancos e Fintechs** | Compliance cego ao contexto macroeconômico | Sistema de AML que distingue crise de crime |
+| **Corretoras de Cripto** | Falsos positivos bloqueando clientes legítimos | **Contexto reduz falso positivo vs. regra fixa incondicional — mas não o zera; aumenta relativo ao modelo sem IRF (ver trade-off acima). Reduz fadiga de analista via priorização, não elimina revisão humana.** |
+| **Bancos e Fintechs** | Compliance cego ao contexto macroeconômico | Sistema de AML que pondera crise vs. crime — com precisão mensurada, não hipotética (45,2% vs 35,9%) |
 | **Reguladores (BCB/COAF)** | Excesso de reportes baixa qualidade que ocultam os reais | Reportes mais precisos com rascunho automatizado via LLM |
 | **Mercado de Dados** | Validação independente e data-driven do paper de Britto (2026) | Evidência econométrica com cadeia de 5 provas convergentes |
 
 ---
 
-## 🔬 Nota Metodológica — Limitação de Atribuição Geográfica
+##  Nota Metodológica — Limitação de Atribuição Geográfica
 
 ### O que o paper reconhece
 O paper de Britto (2026) admite explicitamente que os dados on-chain (volume de USDT em blockchain) são **globais** — não permitem identificar se quem comprou USDT foi um brasileiro, um argentino ou um turco. Para resolver isso, o paper cruza com dados de busca web geolocalizados como proxy de demanda doméstica.

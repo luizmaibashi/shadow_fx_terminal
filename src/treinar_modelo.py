@@ -12,6 +12,7 @@ e a produção (API/Pipeline).
 import sys
 import joblib
 import logging
+import numpy as np
 import pandas as pd
 from pathlib import Path
 from sklearn.ensemble import IsolationForest
@@ -64,16 +65,33 @@ def main():
     )
     modelo.fit(X_scaled)
 
+    # 3b. Calibração do range de score_samples() nos dados de treino.
+    # score_samples() nao tem range fixo teorico: depende dos dados e hiperparametros.
+    # Usamos p1/p99 (nao min/max) para nao deixar 1 outlier esticar toda a escala.
+    scores_treino = modelo.score_samples(X_scaled)
+    calibracao = {
+        "score_min": float(np.percentile(scores_treino, 1)),
+        "score_max": float(np.percentile(scores_treino, 99)),
+    }
+    logger.info(
+        f"Calibração de score: p1={calibracao['score_min']:.4f} "
+        f"p99={calibracao['score_max']:.4f} "
+        f"(bruto min={scores_treino.min():.4f} max={scores_treino.max():.4f})"
+    )
+
     # 4. Persistência v1
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     model_out = MODELS_DIR / "isolation_forest_v1.joblib"
     scaler_out = MODELS_DIR / "scaler_v1.joblib"
+    calibracao_out = MODELS_DIR / "score_calibracao_v1.joblib"
 
     joblib.dump(modelo, model_out)
     joblib.dump(scaler, scaler_out)
+    joblib.dump(calibracao, calibracao_out)
 
     logger.info(f"✅ Modelo salvo em: {model_out}")
     logger.info(f"✅ Scaler salvo em: {scaler_out}")
+    logger.info(f"✅ Calibração salva em: {calibracao_out}")
     logger.info("Treinamento concluído com sucesso.")
 
 if __name__ == "__main__":

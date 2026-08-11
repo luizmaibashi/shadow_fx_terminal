@@ -89,12 +89,13 @@ def camada1_filtros_bcb(df: pd.DataFrame) -> pd.DataFrame:
     for idx in df[mask_r1].index:
         flags_razoes[idx].append("R1:acima_limite_bcb")
 
-    # R2: Volume acumulado por usuario (janela 30 dias CALENDÁRIO)
+    # R2: Volume acumulado por usuario (janela 30 dias CALENDARIO, nao 30 transacoes)
     df["data"] = pd.to_datetime(df["timestamp"]).dt.date
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
     for user_id, grupo in df.groupby("user_id"):
-        grupo_ord = grupo.sort_values("timestamp").copy()
-        vol_30d   = grupo_ord["valor_brl"].rolling(30, min_periods=1).sum()
-        idx_r2    = grupo_ord[vol_30d.values > 50_000].index
+        grupo_ord = grupo.sort_values("timestamp")
+        vol_30d = grupo_ord.set_index("timestamp")["valor_brl"].rolling("30D", min_periods=1).sum()
+        idx_r2 = grupo_ord.index[vol_30d.values > 50_000]
         df.loc[idx_r2, "c1_flag"] = True
         for idx in idx_r2:
             flags_razoes[idx].append("R2:volume_30d_acima_50k")
@@ -188,10 +189,37 @@ def carregar_modelo_producao():
     return joblib.load(model_path), joblib.load(scaler_path)
 
 
-def inferir_score(df_features: pd.DataFrame, modelo, scaler) -> pd.DataFrame:
+def carregar_calibracao_score() -> dict:
+    """Carrega o range (p1/p99) do score_samples() calibrado no treino (treinar_modelo.py).
+
+    Sem isso, normalizar por um range fixo assumido "na mao" desalinha do range
+    real do modelo/dados treinados e satura o score.
+    """
+    calib_path = MODELS_DIR / "score_calibracao_v1.joblib"
+    if not calib_path.exists():
+        logger.warning(
+            "Calibração de score não encontrada (rode treinar_modelo.py). "
+            "Usando range genérico de fallback -0.5/0.5."
+        )
+        return {"score_min": -0.5, "score_max": 0.5}
+    return joblib.load(calib_path)
+
+
+def normalizar_score_anomalia(scores_brutos, calibracao: dict):
+    """Normaliza score_samples() do Isolation Forest para [0, 100] (mais alto = mais suspeito).
+
+    Única implementação — usada tanto no pipeline offline quanto na API online,
+    para não divergir a calibração entre os dois (training-serving parity).
+    """
+    score_min, score_max = calibracao["score_min"], calibracao["score_max"]
+    scores_norm = 100 * (1 - (scores_brutos - score_min) / (score_max - score_min))
+    return np.clip(scores_norm, 0, 100)
+
+
+def inferir_score(df_features: pd.DataFrame, modelo, scaler, calibracao: dict = None) -> pd.DataFrame:
     """Aplica o modelo e retorna scores de anomalia normalizados."""
     X = df_features[FEATURES_ML].fillna(0).values
-    
+
     # Se nao houver modelo pre-treinado, gera score heuristico baseado em volume e IRF
     if modelo is None:
         logger.info("Executando Fallback Heuristico (Sem Modelo Joblib)")
@@ -199,10 +227,8 @@ def inferir_score(df_features: pd.DataFrame, modelo, scaler) -> pd.DataFrame:
     else:
         X_scaled = scaler.transform(X)
         scores_brutos = modelo.score_samples(X_scaled)
-        # Normalizar para [0, 100]: mais alto = mais suspeito
-        score_min, score_max = -0.5, 0.5 # Range tipico da iForest
-        scores_norm = 100 * (1 - (scores_brutos - score_min) / (score_max - score_min))
-        scores_norm = scores_norm.clip(0, 100)
+        calibracao = calibracao or carregar_calibracao_score()
+        scores_norm = normalizar_score_anomalia(scores_brutos, calibracao)
 
     df_features = df_features.copy()
     df_features["c2_score_anomalia"] = np.round(scores_norm, 1)
