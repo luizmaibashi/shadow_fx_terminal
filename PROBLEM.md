@@ -125,6 +125,23 @@ A seção anterior descreve o que o IRF **deveria** fazer: distinguir Cidadão A
 
 ---
 
+## 🎯 Vantagem Competitiva — Por Que Isso Não É Só Mais um Score de Anomalia
+
+O mercado de blockchain analytics/AML já é dominado por players consolidados — Chainalysis, TRM Labs, Elliptic — com modelo robusto, infraestrutura, clientes e centenas de milhões em captação. Nenhum dos três compete de frente com **modelo melhor**: eles têm mais dado, mais engenharia, mais tempo de mercado. A vantagem deste projeto está em outro eixo: **abordagem econômica (contexto macro-fiscal como feature) + especificidade regulatória brasileira**, não em "detectar melhor" no sentido genérico.
+
+**Por que "detectar melhor" não é o argumento certo:** já vimos acima que o ganho de precisão vem com custo real (mais falso positivo). Um discurso de "nosso modelo é mais preciso" sem essa ressalva seria capengo o suficiente pra qualquer avaliador técnico derrubar em 5 minutos.
+
+**Por que "nicho porque eles não têm orçamento" também não é o argumento certo:** essa foi a primeira hipótese testada — e caiu contra um fato real. VASP autorizada no Brasil precisa de capital mínimo de R$ 10,8 milhões por lei (fonte: NDM Advogados) — não é startup sem grana pagando US$50-200K/ano de Chainalysis.
+
+**O argumento que sobreviveu ao teste:** complexidade regulatória brasileira dinâmica, que um player global genérico não tem incentivo de negócio pra acompanhar de perto.
+- **~7 mudanças regulatórias relevantes em ~18 meses** — Lei 14.478/2022, 4 consultas públicas (2023-2024), Resoluções BCB 519/520/521 (nov/2025), Resolução 561, IN BCB 701/2026, mudança de IOF sobre stablecoin (fev/2026). Fonte: Agência Brasil, Mattos Filho, Forbes.
+- **Nenhuma evidência pública** de Chainalysis, TRM Labs ou Elliptic tratando o Brasil como mercado prioritário — sem expansão anunciada, sem feature específica pra resolução BCB encontrada em busca dedicada.
+- **Volume real que sustenta a demanda**: R$ 388 bilhões declarados em criptoativos por brasileiros em 9 meses de 2025, mais de 70% em stablecoins. Fonte: Blue Consult.
+
+**A ressalva que fica, com honestidade:** essa é uma tese bem fundamentada em fato público, não uma opinião solta — mas continua sendo **raciocínio, não validação de mercado**. O teste que faltaria pra virar validação (alguém de uma exchange brasileira confirmando que já não resolveu isso sozinho, ou que valorizaria essa especificidade) ainda não foi feito. Ver `docs/tese/shadow-fx-vantagem-competitiva/TESE.md` (veredito completo, com as 5 lentes) e `docs/wayfinder/tese-veredito-condicoes/0005-roteiro-distribuicao-real.md` (roteiro da conversa pendente).
+
+---
+
 ##  Valor de Negócio & ROI
 
 | Stakeholder | Problema Resolvido | Valor Gerado |

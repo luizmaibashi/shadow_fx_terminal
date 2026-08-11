@@ -87,6 +87,8 @@ O problema crítico: sistemas de compliance baseados apenas em regras simples ("
 1. **Valida quantitativamente** a tese da dolarização informal brasileira via stablecoins.
 2. **Entrega um Motor de Compliance mais preciso** que atende às novas regulações do BCB, ponderando melhor o cidadão que quer se proteger da inflação e o criminoso que pratica evasão de divisas — **com um trade-off real, medido e documentado, não uma solução sem custo** (ver `docs/tese/shadow-fx-vantagem-competitiva/TESE.md` e a seção de Resultados abaixo).
 
+> **Vantagem competitiva, em uma frase:** não é "detecta melhor" que Chainalysis/TRM Labs/Elliptic (eles têm mais dado, mais engenharia) — é especialização na complexidade regulatória brasileira dinâmica (~7 mudanças relevantes em ~18 meses) que um player global genérico não prioriza. Argumento fundamentado em fato público, ainda não validado por conversa real de mercado — detalhe completo e ressalva honesta em `PROBLEM.md` § Vantagem Competitiva.
+
 ---
 
 ## ️ Arquitetura do Sistema (3 Camadas)

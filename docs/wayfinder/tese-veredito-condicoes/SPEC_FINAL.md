@@ -15,9 +15,12 @@
 
 ## Fora de escopo (não resolvido aqui)
 
-- **Reescrever o pitch com a justificativa de nicho corrigida** (complexidade regulatória, não preço) — o Ticket 0004 registrou a implicação mas não implementou a mudança de texto. Fica como próximo passo se o usuário quiser.
 - **Executar a conversa de descoberta** — roteiro pronto, conversa em si depende do usuário.
 - **Reteste da tese em +30 dias** (2026-09-09, campo já registrado em `TESE.md`) — avaliar então se a conversa aconteceu e se algo mudou.
+
+## Atualização (2026-08-11)
+
+O item "reescrever o pitch com a justificativa de nicho corrigida", listado acima como fora de escopo, **foi implementado** — README.md e PROBLEM.md agora têm a narrativa corrigida, reforçada com pesquisa adicional (7 mudanças regulatórias em 18 meses, ausência de investimento dos incumbentes no Brasil, R$388bi de volume — ver Ticket 0003, Adendo). Também consolidada uma 3ª instância do padrão de duplicação de prompt/rascunho COAF, achada em `app.py` num Blind Spot Pass que não tinha sido feito nesse arquivo antes. Único item de fato pendente do bloco inteiro: a conversa real do Ticket 0005.
 
 ## Próximo passo (fora do Wayfinder)
 
