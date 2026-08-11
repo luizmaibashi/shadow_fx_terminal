@@ -72,6 +72,7 @@ def camada1_filtros_bcb(df: pd.DataFrame) -> pd.DataFrame:
         R3: Mais de 5 transacoes para wallets distintas no mesmo dia
         R4: Transacoes multiplas entre R$ 8.000 e R$ 9.900 (fracionamento)
         R5: Horario anomalo: entre 00h e 05h + valor > R$ 5.000
+        R6: Timestamp malformado/ausente (nao verificavel -> tratado como suspeito)
     """
     df = df.copy()
     df["c1_flag"]   = False
@@ -85,10 +86,26 @@ def camada1_filtros_bcb(df: pd.DataFrame) -> pd.DataFrame:
     for idx in df[mask_r1].index:
         flags_razoes[idx].append("R1:acima_limite_bcb")
 
+    # Parse defensivo do timestamp: errors="coerce" em vez do default "raise" —
+    # uma transacao com timestamp malformado (fonte externa) nao pode derrubar
+    # o lote inteiro. Linhas que viram NaT sao tratadas na R6 abaixo: timestamp
+    # ilegivel e sinal de suspeita em si (nao pode ser validado -> nao passa
+    # silenciosamente pelas regras que dependem de tempo, R2 e R5).
+    df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+    mask_r6 = df["timestamp"].isna()
+    if mask_r6.any():
+        logger.warning(f"     {mask_r6.sum()} transacao(oes) com timestamp malformado/ausente — flagadas via R6.")
+        df.loc[mask_r6, "c1_flag"] = True
+        for idx in df[mask_r6].index:
+            flags_razoes[idx].append("R6:timestamp_malformado")
+
+    # R2, R3, R5 dependem de timestamp valido — .dt.date em NaT retorna NaT,
+    # entao linhas com timestamp malformado ficam com "data" vazio (nao
+    # contaminam groupby/rolling) e ja foram flagadas via R6 acima.
+    df["data"] = df["timestamp"].dt.date
+
     # R2: Volume acumulado por usuario (janela 30 dias CALENDARIO, nao 30 transacoes)
-    df["data"] = pd.to_datetime(df["timestamp"]).dt.date
-    df["timestamp"] = pd.to_datetime(df["timestamp"])
-    for user_id, grupo in df.groupby("user_id"):
+    for user_id, grupo in df[~mask_r6].groupby("user_id"):
         grupo_ord = grupo.sort_values("timestamp")
         vol_30d = grupo_ord.set_index("timestamp")["valor_brl"].rolling("30D", min_periods=1).sum()
         idx_r2 = grupo_ord.index[vol_30d.values > 50_000]
@@ -115,8 +132,8 @@ def camada1_filtros_bcb(df: pd.DataFrame) -> pd.DataFrame:
     for idx in df[mask_r4].index:
         flags_razoes[idx].append("R4:fracionamento_suspeito")
 
-    # R5: Madrugada + valor alto
-    df["hora"] = pd.to_datetime(df["timestamp"]).dt.hour
+    # R5: Madrugada + valor alto (timestamp ja parseado acima; NaT -> hora NaN -> between() = False)
+    df["hora"] = df["timestamp"].dt.hour
     mask_r5   = df["hora"].between(0, 5) & (df["valor_brl"] > 5_000)
     df.loc[mask_r5, "c1_flag"] = True
     for idx in df[mask_r5].index:
@@ -139,7 +156,9 @@ def engenharia_features(df: pd.DataFrame, df_irf: pd.DataFrame) -> pd.DataFrame:
     ocorram aqui em tempo de execucao.
     """
     df = df.copy()
-    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    # errors="coerce": mesma defesa de camada1_filtros_bcb — transacao com
+    # timestamp malformado vira NaT em vez de derrubar o lote inteiro.
+    df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
     df["data_ts"]   = df["timestamp"].dt.normalize()
 
     # 1. Frequencia Diaria

@@ -116,6 +116,21 @@ class TestCamada1:
         df = camada1_filtros_bcb(df)
         assert df["c1_flag"].any()
 
+    def test_r6_timestamp_malformado_nao_quebra_lote(self):
+        """R6: timestamp malformado deve flagar a linha, nao derrubar o lote inteiro."""
+        df = pd.DataFrame({
+            "user_id": ["USR_001", "USR_001", "USR_002"],
+            "timestamp": ["2024-06-15 14:00", "data-invalida-###", "2024-06-16 03:00"],
+            "valor_brl": [1500.0, 2000.0, 6000.0],
+            "wallet_destino": ["w1", "w1", "w2"],
+        })
+        df = camada1_filtros_bcb(df)  # nao deve lancar excecao
+        assert df.loc[1, "c1_flag"]
+        assert "R6:timestamp_malformado" in df.loc[1, "c1_razoes"]
+        # A linha valida vizinha continua avaliada normalmente (R5: madrugada)
+        assert df.loc[2, "c1_flag"]
+        assert "R5" in df.loc[2, "c1_razoes"]
+
 
 class TestEngenhariaFeatures:
     def _preparar(self, df_transacoes, df_irf):

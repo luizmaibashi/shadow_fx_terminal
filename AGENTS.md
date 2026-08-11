@@ -37,7 +37,7 @@
 |-------|-------------|
 | **IRF** | Índice de Risco Fiscal (0-100). v1 (3 sinais, legado) e v2 (6 sinais, produção) coexistem — `irf_contexto` usa sempre v2. Não é métrica de risco de crédito nem de mercado — resume "quão hostil está o cenário macro brasileiro hoje", injetado como feature de ML. |
 | **Smurfing** | Fracionamento de transações para fugir de limites regulatórios. |
-| **Poupador Assustado** | Comprador legítimo de USDT como hedge contra desvalorização do Real. É quem o projeto existe pra **não** incomodar — e é o perfil que mais sofre o trade-off medido (falso positivo 1,6%→5,6% com IRF, ver `TESE.md`). |
+| **Poupador Assustado** | Comprador legítimo de USDT como hedge contra desvalorização do Real. É quem o projeto existe pra **não** incomodar — e é o perfil que mais sofre o trade-off medido (falso positivo aumenta 2,3x-3,5x com IRF, faixa não número fixo, ver `TESE.md`). |
 | **Fracionador** | Perfil suspeito: estrutura múltiplas transações abaixo de R$10k pra evitar reporte. É quem o projeto existe pra pegar. |
 | **Compliance** | Não é "seguir regra" — é decidir, por transação, se precisa de atenção humana, em 3 camadas de custo crescente. |
 | **Risco** | Probabilidade de evasão de divisas ou lavagem — nunca "risco de mercado"/"risco de crédito". |
@@ -97,11 +97,15 @@ Herdado de `TESE.md`: **a tese/projeto "falha" se, medido contra o rótulo de ve
 ## Débitos técnicos conhecidos
 
 1. Dados em memória (DataFrame) — não escala para milhões de transações. *(aceito conscientemente via ADR-0006)*
-2. Sem CI/CD robusto (linting/mypy) — `pytest` roda, mas sem gate automatizado de qualidade.
-3. Sem banco de dados — dados voláteis entre restarts. *(mesmo débito do item 1, ADR-0006)*
-4. ~~Timestamps malformados sem try/except no pipeline~~ — **parcialmente corrigido (2026-08-11)**: coluna `hora` dessincronizada do timestamp real em transações fracionadas (`gerador_transacoes_mock.py`) foi corrigida. Validação defensiva (try/except) em parsing de timestamp malformado de fonte externa continua em aberto.
-5. `preparar_prompt_llm` duplicado no pipeline (deve migrar para agente RAG) — **não é o mesmo item** do bug de duplicação entre `api.py`/`pipeline_compliance.py` corrigido em 2026-08-11 (esse foi consolidado numa função única); este item 5 é sobre organização arquitetural (onde a função deveria morar), ainda em aberto.
+2. Sem banco de dados — dados voláteis entre restarts. *(mesmo débito do item 1, ADR-0006)*
+
+Nenhum outro débito técnico aberto no momento — os 4 que restavam (CI/CD, timestamp malformado, `preparar_prompt_llm` arquitetural, thresholds do IRF v2) foram corrigidos em 2026-08-11 (ver abaixo). Só a conversa real do Ticket 0005 (`docs/wayfinder/tese-veredito-condicoes/`) segue pendente — ação humana, fora do escopo de código.
+
 ### Corrigidos em 2026-08-11 (Blind Spot Pass + reconciliação com histórico real)
+
+- **Timestamp malformado sem validação defensiva**: `camada1_filtros_bcb()` e `engenharia_features()` usavam `pd.to_datetime()` com `errors="raise"` (default) — uma transação com timestamp ilegível derrubava o lote inteiro. Corrigido com `errors="coerce"` + regra nova **R6** (timestamp malformado/ausente é tratado como suspeito em si, não passa silenciosamente pelas regras que dependem de tempo). Também corrigido antes: coluna `hora` dessincronizada do timestamp real em transações fracionadas (`gerador_transacoes_mock.py`).
+- **`preparar_prompt_llm` duplicado no pipeline**: movido pra `agente_rag.py`, co-localizado com o resto da lógica de LLM/RAG. Import tardio em `pipeline_compliance.py` (mesmo padrão de fallback gracioso que `executar_camada3_llm()` já usava).
+- **Sem CI/CD robusto**: adicionado job de lint (`ruff`, config enxuta em `ruff.toml`) ao `.github/workflows/ci.yml` — também corrigido bug de path que fazia o CI apontar pra um diretório que não existe dentro do próprio repo do projeto.
 
 - **Thresholds de normalização do IRF v2** (`calcular_irf_v2` em `utils.py`) eram constantes hardcoded calibradas uma vez sobre 2022-2025 — mesma categoria de fragilidade do bug de calibração do Isolation Forest. Corrigido: `calcular_calibracao_irf_v2()` calcula p95 empiricamente sobre o dado real, `recalcular_irf.py` salva como artefato (`data/processed/irf_v2_calibracao.json`). Achado real: threshold de IPCA estava em `4.5`, valor calibrado é `11,4` (2,5x maior) — o sinal de IPCA saturava fácil demais. Retrocompatível: `calcular_irf_v2()` aceita `thresholds=None` e cai no fallback (`THRESHOLDS_IRF_V2_DEFAULT`, mesmos valores hardcoded originais).
 
