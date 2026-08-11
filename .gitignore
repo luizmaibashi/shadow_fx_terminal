@@ -7,11 +7,12 @@ models/*.pkl
 models/*.h5
 
 # Ferramentas locais de geracao de assets (nao sao codigo de producao)
-src/generate_dark_pdf.py
+tools/generate_dark_pdf.py
 
 # Python
 __pycache__/
 src/__pycache__/
+tools/__pycache__/
 *.pyc
 *.pyo
 .venv/

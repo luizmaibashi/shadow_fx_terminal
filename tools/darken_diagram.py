@@ -40,6 +40,10 @@ def convert_diagram_to_dark(image_path, output_path):
         return False
 
 if __name__ == "__main__":
-    src_path = r"c:\Users\Tchan\Documents\Base_de_Conhecimento (1)\PROJETOS\02_PORTFOLIO\shadow_fx_terminal\reports\USDT Transaction Approval-2026-05-15-183841.png"
-    out_path = r"c:\Users\Tchan\Documents\Base_de_Conhecimento (1)\PROJETOS\02_PORTFOLIO\shadow_fx_terminal\reports\USDT Transaction Approval-2026-05-15-183841_dark.png"
+    # Caminho relativo (era absoluto, de outra maquina — "c:\Users\Tchan\...").
+    # Executar a partir da raiz do projeto: python tools/darken_diagram.py
+    reports_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "reports")
+    nome_base = "USDT Transaction Approval-2026-05-15-183841"
+    src_path = os.path.join(reports_dir, f"{nome_base}.png")
+    out_path = os.path.join(reports_dir, f"{nome_base}_dark.png")
     convert_diagram_to_dark(src_path, out_path)

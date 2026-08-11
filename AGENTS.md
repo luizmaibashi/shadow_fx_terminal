@@ -8,7 +8,8 @@
 
 ## Mapa do projeto
 
-- `src/` — Código modular de produção (utils, pipeline, API, agente RAG)
+- `src/` — Código modular de produção (utils, pipeline, API, agente RAG) + scripts de coleta/preparação de dado
+- `tools/` — Scripts de geração de assets pra apresentação (screenshots, diagramas, PDF) — **não fazem parte do pipeline**, não têm teste, não rodam em produção. Separados de `src/` em 2026-08-11.
 - `notebooks/` — 3 notebooks CRISP-DM (correlação, IRF, arena de modelos)
 - `app.py` — Dashboard Streamlit (frontend)
 - `docs/adr/` — Architecture Decision Records (6 registrados)
