@@ -147,7 +147,7 @@ Um brasileiro que compra R$ 8.000 de USDT num dia normal e um brasileiro que faz
 
 Nenhum sistema de regras fixas consegue fazer essa distinção. Um modelo que conhece o estado do câmbio, a trajetória da dívida pública, o tom do último Copom e o volume de busca por USDT no Brasil — consegue.
 
-> **Em termos regulatórios:** O Shadow FX Terminal reduz a fadiga dos analistas de compliance e melhora a precisão dos reportes ao COAF (medido: 35,9%→45,2%) frente a um modelo sem contexto macro. Não garante zero exclusão de cidadão legítimo — o próprio contexto que ajuda a pegar mais fracionador também aumenta o falso positivo em poupador legítimo (medido: 1,5%→3,5%, ver seção de Resultados). É uma melhora mensurável, não uma solução sem custo.
+> **Em termos regulatórios:** O Shadow FX Terminal reduz a fadiga dos analistas de compliance e melhora a precisão dos reportes ao COAF (medido: 35,9%→44,8%) frente a um modelo sem contexto macro. Não garante zero exclusão de cidadão legítimo — o próprio contexto que ajuda a pegar mais fracionador também aumenta o falso positivo em poupador legítimo (medido em 3 rodadas de correção de bug: entre 2,3x e 3,5x — faixa, não número fixo, ver seção de Resultados). É uma melhora mensurável, não uma solução sem custo.
 
 ---
 
@@ -440,15 +440,15 @@ Conclusão: A convergência das 5 evidências constitui suporte metodológico
 | 2024-S2 | **Muito Alto** | Pico de correlação — BRL atingiu R$ 6,30, USDT como hedge |
 | 2025 | Alto | Continuidade do aperto fiscal, dominância fiscal evidente |
 
-> **⚠️ Nota de Calibração — Pesos do IRF v1:** Os pesos (Câmbio 40%, USDT 35%, Copom 25%) foram definidos por julgamento especializado, não por otimização empírica. O IRF v2 (`calcular_irf_v2()`) usa 6 sinais ortogonais com dados reais do BCB. Veja `src/utils.py`.
+> **⚠️ Nota de Calibração — Pesos do IRF v1:** Os pesos (Câmbio 40%, USDT 35%, Copom 25%) foram definidos por julgamento especializado, não por otimização empírica. O IRF v2 (`calcular_irf_v2()`) usa 6 sinais ortogonais com dados reais do BCB, com thresholds de normalização calibrados empiricamente (p95, `calcular_calibracao_irf_v2()`) — não mais constantes hardcoded. Veja `src/utils.py`.
 
 ### Fase 3 — Motor de Compliance AML
 
 | Resultado | Quantidade | % |
 |:---|:---:|:---:|
-|  VERDE (Normal) | 3.238 | 71,8% |
-|  AMARELO (Monitorar) | 1.189 | 26,4% |
-|  VERMELHO (Ação Imediata) | 82 | 1,8% |
+|  VERDE (Normal) | 3.049 | 67,6% |
+|  AMARELO (Monitorar) | 1.359 | 30,1% |
+|  VERMELHO (Ação Imediata) | 101 | 2,2% |
 
 > Números medidos em 2026-08-11, após correção de um bug de calibração no `score_samples()` do Isolation Forest (a versão anterior classificava quase tudo como suspeito por um range de normalização hardcoded errado) e reconciliação com o `IRF_LAG_DAYS=14` (lag anti-vazamento de dado) do histórico real do projeto — ver `docs/audit/audit_report_v2.md` § 6 e `docs/tese/shadow-fx-vantagem-competitiva/TESE.md` (Adendo).
 
@@ -458,13 +458,13 @@ Sistemas de compliance antigos baseados apenas em regras (ex: "Flag se > R$ 10.0
 
 -  **Tipo A: O "Poupador Assustado" (Legítimo)**
   * *Comportamento:* Compra USDT no desespero quando o câmbio derrete.
-  * *O que a IA faz:* Como injetamos o **IRF** no modelo, a IA entende que num dia de risco fiscal alto a corrida pro dólar é esperada, e tende a classificar como **VERDE** com mais frequência que um sistema sem contexto. Mas **não é garantia**: medido contra o rótulo de verdade do dataset, o falso positivo nesse perfil **aumenta 2,3x** com o IRF ligado (1,5% → 3,5% — ver `docs/tese/shadow-fx-vantagem-competitiva/TESE.md`). O ganho de precisão geral do sistema (35,9%→45,2%) vem em parte às custas desse perfil específico.
+  * *O que a IA faz:* Como injetamos o **IRF** no modelo, a IA entende que num dia de risco fiscal alto a corrida pro dólar é esperada, e tende a classificar como **VERDE** com mais frequência que um sistema sem contexto. Mas **não é garantia**: medido contra o rótulo de verdade do dataset, o falso positivo nesse perfil **aumenta entre 2,3x e 3,5x** com o IRF ligado, dependendo da rodada de calibração (número exato oscilou em 3 correções de bug independentes — ver `docs/tese/shadow-fx-vantagem-competitiva/TESE.md`, Adendo 2). O ganho de precisão geral do sistema (35,9%→44,8%) vem em parte às custas desse perfil específico.
 -  **Tipo B: O Institucional / Mesa de Arbitragem (Legítimo, mas volumoso)**
   * *Comportamento:* Movimenta R$ 200.000 todo dia.
   * *O que a IA faz:* A Isolation Forest olha o histórico e percebe que *volumes gigantes são o "normal" dessa carteira*. Em vez de explodir o sistema com alertas vermelhos, ele apenas sinaliza como **AMARELO (Monitorar)**.
 -  **Tipo C: O Fracionador / Evasor (Suspeito)**
   * *Comportamento:* Faz 11 transferências de R$ 9.500 de madrugada (Smurfing para fugir do limite BCB de R$ 10k).
-  * *O que a IA faz:* O modelo detecta a anomalia grave com mais recall que sem o IRF (34,4%→43,9%, medido contra o rótulo de verdade) — mas ainda deixa passar mais da metade dos fracionadores reais do dataset sintético. Não é detecção perfeita, é detecção melhor que a alternativa sem contexto.
+  * *O que a IA faz:* O modelo detecta a anomalia grave com mais recall que sem o IRF (34,4%→49,9%, medido contra o rótulo de verdade) — mas ainda deixa passar mais da metade dos fracionadores reais do dataset sintético. Não é detecção perfeita, é detecção melhor que a alternativa sem contexto.
 
 Essa abordagem reduz a fadiga do time de operações via priorização — não elimina falso positivo nem garante recall total. O trade-off é medido, documentado e aceito conscientemente (não tunado escondido), porque o dataset é sintético e otimizar contra ele arriscaria ajustar pra ruído que não existe em produção real.
 

@@ -77,7 +77,7 @@
 
 ## Métrica de sucesso e cenário de falha (Falsificabilidade)
 
-Herdado de `TESE.md`: **a tese/projeto "falha" se, medido contra o rótulo de verdade do dataset sintético, o IRF não melhorar a precisão em relação a rodar sem ele.** Testado com `IRF_LAG_DAYS=14` aplicado corretamente (2026-08-11): precisão 35,9%→45,2%, recall 34,4%→43,9%, falso positivo em poupador legítimo 1,5%→3,5% (2,3x, não 3,5x como no teste inicial com vazamento). Critério de morte não disparou — veredito "VAI" confirmado com o número correto.
+Herdado de `TESE.md`: **a tese/projeto "falha" se, medido contra o rótulo de verdade do dataset sintético, o IRF não melhorar a precisão em relação a rodar sem ele.** Testado em 2 rodadas de correção (`IRF_LAG_DAYS=14` + calibração empírica do IRF v2, 2026-08-11): precisão 35,9%→44,8%, recall 34,4%→49,9%. Critério de morte nunca disparou nas 3 versões testadas — veredito "VAI" é robusto. O trade-off de falso positivo oscilou entre 2,3x e 3,5x conforme os bugs foram corrigidos — reportar como faixa (2-3,5x), não número de 1 casa decimal (ver `TESE.md`, Adendo 2).
 
 ---
 
@@ -101,9 +101,9 @@ Herdado de `TESE.md`: **a tese/projeto "falha" se, medido contra o rótulo de ve
 3. Sem banco de dados — dados voláteis entre restarts. *(mesmo débito do item 1, ADR-0006)*
 4. ~~Timestamps malformados sem try/except no pipeline~~ — **parcialmente corrigido (2026-08-11)**: coluna `hora` dessincronizada do timestamp real em transações fracionadas (`gerador_transacoes_mock.py`) foi corrigida. Validação defensiva (try/except) em parsing de timestamp malformado de fonte externa continua em aberto.
 5. `preparar_prompt_llm` duplicado no pipeline (deve migrar para agente RAG) — **não é o mesmo item** do bug de duplicação entre `api.py`/`pipeline_compliance.py` corrigido em 2026-08-11 (esse foi consolidado numa função única); este item 5 é sobre organização arquitetural (onde a função deveria morar), ainda em aberto.
-6. **[novo, 2026-08-11]** Thresholds de normalização do IRF v2 (`calcular_irf_v2` em `utils.py`) são constantes hardcoded calibradas uma vez sobre 2022-2025 — mesma categoria de fragilidade que o bug de calibração do Isolation Forest (já corrigido). Fix: recalcular percentis a cada atualização de dado e versionar como artefato.
-
 ### Corrigidos em 2026-08-11 (Blind Spot Pass + reconciliação com histórico real)
+
+- **Thresholds de normalização do IRF v2** (`calcular_irf_v2` em `utils.py`) eram constantes hardcoded calibradas uma vez sobre 2022-2025 — mesma categoria de fragilidade do bug de calibração do Isolation Forest. Corrigido: `calcular_calibracao_irf_v2()` calcula p95 empiricamente sobre o dado real, `recalcular_irf.py` salva como artefato (`data/processed/irf_v2_calibracao.json`). Achado real: threshold de IPCA estava em `4.5`, valor calibrado é `11,4` (2,5x maior) — o sinal de IPCA saturava fácil demais. Retrocompatível: `calcular_irf_v2()` aceita `thresholds=None` e cai no fallback (`THRESHOLDS_IRF_V2_DEFAULT`, mesmos valores hardcoded originais).
 
 - Regra R2 (`camada1_filtros_bcb`) usava janela de 30 *transações*, não 30 dias calendário — corrigido com `.rolling("30D")`.
 - `api.py`: schema `TransacaoInput` não declarava `hora` nem `wallets_unicas`, mas o endpoint `/compliance/score` os usava — causava `AttributeError` garantido. Corrigido.

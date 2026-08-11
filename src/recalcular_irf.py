@@ -22,6 +22,7 @@ Execute: python src/recalcular_irf.py
 """
 
 import sys
+import json
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -32,6 +33,7 @@ from utils import (
     carregar_dataset_mestre,
     calcular_irf_v2,
     calcular_indice_risco_fiscal,
+    calcular_calibracao_irf_v2,
 )
 
 
@@ -61,7 +63,7 @@ def carregar_score_copom_diario() -> pd.Series:
     return serie_diaria
 
 
-def calcular_serie_irf_v2(df_mestre: pd.DataFrame, score_copom_diario: pd.Series) -> pd.DataFrame:
+def calcular_serie_irf_v2(df_mestre: pd.DataFrame, score_copom_diario: pd.Series) -> tuple[pd.DataFrame, dict]:
     """
     Aplica calcular_irf_v2() linha a linha sobre o dataset mestre.
 
@@ -70,8 +72,14 @@ def calcular_serie_irf_v2(df_mestre: pd.DataFrame, score_copom_diario: pd.Series
         - divida_pib_var:     pct_change(1) mensal da Divida/PIB
         - ibc_br_var:         pct_change(1) do IBC-Br
 
+    Calibra os thresholds de normalizacao do IRF v2 empiricamente (p95) sobre
+    essa mesma serie historica, em vez de usar as constantes hardcoded.
+
     Para cada dia, chama calcular_irf_v2() e tambem calcular_indice_risco_fiscal()
     (v1) para manter compatibilidade e comparacao.
+
+    Returns:
+        (df com colunas de IRF, dict de thresholds calibrados usados)
     """
     df = df_mestre.copy()
 
@@ -107,6 +115,10 @@ def calcular_serie_irf_v2(df_mestre: pd.DataFrame, score_copom_diario: pd.Series
     df = df.join(score_copom_diario.rename("score_copom"), how="left")
     df["score_copom"] = df["score_copom"].fillna(0.5)
 
+    # Calibrar thresholds do IRF v2 uma vez, empiricamente, sobre a serie historica
+    # inteira — nao mais constantes hardcoded. Ver calcular_calibracao_irf_v2().
+    thresholds_irf_v2 = calcular_calibracao_irf_v2(df)
+
     # --- Calcular IRF v2 linha a linha ---
     irf_v2_vals = []
     irf_v1_vals = []
@@ -122,6 +134,7 @@ def calcular_serie_irf_v2(df_mestre: pd.DataFrame, score_copom_diario: pd.Series
             variacao_usdt_30d = float(row.get("variacao_usdt_30d", 0) or 0),
             divida_pib_var    = float(row.get("divida_pib_var", 0) or 0),
             ibc_br_var        = float(row.get("ibc_br_var", 0) or 0),
+            thresholds        = thresholds_irf_v2,
         )
 
         # IRF v1 (compatibilidade)
@@ -147,7 +160,7 @@ def calcular_serie_irf_v2(df_mestre: pd.DataFrame, score_copom_diario: pd.Series
         include_lowest=True,
     )
 
-    return df
+    return df, thresholds_irf_v2
 
 
 def main():
@@ -166,9 +179,10 @@ def main():
     if score_copom is not None:
         print(f"      27 reunioes -> serie diaria de {len(score_copom)} dias")
 
-    # 3. Calcular IRF v2 diario
+    # 3. Calcular IRF v2 diario (com thresholds calibrados empiricamente)
     print("\n[3/4] Calculando IRF v2 (6 sinais reais)...")
-    df_irf = calcular_serie_irf_v2(df_mestre, score_copom)
+    df_irf, thresholds_irf_v2 = calcular_serie_irf_v2(df_mestre, score_copom)
+    print(f"      Thresholds calibrados (p95): {thresholds_irf_v2}")
 
     # Estatisticas
     print(f"      IRF v2 medio: {df_irf['irf_v2'].mean():.1f}")
@@ -201,10 +215,17 @@ def main():
     df_irf.to_csv(out_padrao)
     print(f"      -> {out_padrao.name} (atualizado com IRF v2 + backward compat.)")
 
+    # Calibracao versionada como artefato — nao mais constante hardcoded em codigo.
+    # Mesmo padrao de models/score_calibracao_v1.joblib (Isolation Forest).
+    out_calibracao = DATA_PROC / "irf_v2_calibracao.json"
+    with open(out_calibracao, "w", encoding="utf-8") as f:
+        json.dump(thresholds_irf_v2, f, indent=2, ensure_ascii=False)
+    print(f"      -> {out_calibracao.name} (thresholds p95 calibrados)")
+
     print("\n" + "=" * 65)
     print("  CONCLUIDO")
     print("=" * 65)
-    return df_irf
+    return df_irf, thresholds_irf_v2
 
 
 if __name__ == "__main__":

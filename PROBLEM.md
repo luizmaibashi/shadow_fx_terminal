@@ -111,15 +111,15 @@ Injetar o Índice de Risco Fiscal como variável do modelo de ML transforma um c
 
 ## ⚠️ Trade-off Real Medido — o Preço da Inovação Central
 
-A seção anterior descreve o que o IRF **deveria** fazer: distinguir Cidadão A de Criminoso B sem custo para nenhum dos dois. Testado contra o rótulo de verdade do dataset sintético (`docs/tese/shadow-fx-vantagem-competitiva/TESE.md`, veredito 2026-08-10), a realidade tem um trade-off que a narrativa acima não capturava:
+A seção anterior descreve o que o IRF **deveria** fazer: distinguir Cidadão A de Criminoso B sem custo para nenhum dos dois. Testado contra o rótulo de verdade do dataset sintético (`docs/tese/shadow-fx-vantagem-competitiva/TESE.md`, veredito 2026-08-10, recalculado em 2 rodadas de correção de bug em 2026-08-11), a realidade tem um trade-off que a narrativa acima não capturava:
 
 | Métrica | Sem IRF | Com IRF |
 |---|---|---|
-| Precisão (dos flagados, % que eram fraude real) | 35,9% | **45,2%** ✅ |
-| Recall (dos fraudadores reais, % detectados) | 34,4% | **43,9%** ✅ |
-| Falso positivo (poupador legítimo flagado à toa) | 1,5% | **3,5%** ⚠️ (2,3x) |
+| Precisão (dos flagados, % que eram fraude real) | 35,9% | **44,8%** ✅ |
+| Recall (dos fraudadores reais, % detectados) | 34,4% | **49,9%** ✅ |
+| Falso positivo (poupador legítimo flagado à toa) | 1,5% | **5,0%** ⚠️ (2,3x–3,5x conforme a rodada de calibração) |
 
-**O que isso significa, sem retórica:** o IRF pega mais fracionador de verdade — mas em troca, incomoda mais Cidadão A (o "Poupador Assustado" que este projeto existe pra proteger). Não é um resultado que invalida o projeto — a tese sobreviveu ao teste de falsificação (precisão e recall melhoram, não é ruído aleatório) — mas é uma tensão real entre os dois objetivos declarados na Pergunta 2, não uma solução que resolve os dois sem custo.
+**O que isso significa, sem retórica:** o IRF pega mais fracionador de verdade — mas em troca, incomoda mais Cidadão A (o "Poupador Assustado" que este projeto existe pra proteger). Não é um resultado que invalida o projeto — a tese sobreviveu ao teste de falsificação em todas as 3 versões testadas (precisão e recall sempre melhoram, não é ruído aleatório) — mas é uma tensão real entre os dois objetivos declarados na Pergunta 2, não uma solução que resolve os dois sem custo. O multiplicador exato do falso positivo (2,3x a 3,5x) se moveu a cada bug de calibração corrigido — reportado como faixa, não número fixo, porque é a leitura honesta (ver `TESE.md`, Adendo 2).
 
 **Decisão registrada:** aceitar o trade-off como está e documentá-lo (não tunar o modelo pra reduzir o falso positivo), porque o dataset é sintético — otimizar contra ele arrisca ajustar pra ruído que não existe em produção real. Ver `docs/wayfinder/tese-veredito-condicoes/0001-tunar-ou-aceitar-trade-off.md`.
 
@@ -130,7 +130,7 @@ A seção anterior descreve o que o IRF **deveria** fazer: distinguir Cidadão A
 | Stakeholder | Problema Resolvido | Valor Gerado |
 |:---|:---|:---|
 | **Corretoras de Cripto** | Falsos positivos bloqueando clientes legítimos | **Contexto reduz falso positivo vs. regra fixa incondicional — mas não o zera; aumenta relativo ao modelo sem IRF (ver trade-off acima). Reduz fadiga de analista via priorização, não elimina revisão humana.** |
-| **Bancos e Fintechs** | Compliance cego ao contexto macroeconômico | Sistema de AML que pondera crise vs. crime — com precisão mensurada, não hipotética (45,2% vs 35,9%) |
+| **Bancos e Fintechs** | Compliance cego ao contexto macroeconômico | Sistema de AML que pondera crise vs. crime — com precisão mensurada, não hipotética (44,8% vs 35,9%) |
 | **Reguladores (BCB/COAF)** | Excesso de reportes baixa qualidade que ocultam os reais | Reportes mais precisos com rascunho automatizado via LLM |
 | **Mercado de Dados** | Validação independente e data-driven do paper de Britto (2026) | Evidência econométrica com cadeia de 5 provas convergentes |
 

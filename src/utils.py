@@ -426,6 +426,47 @@ def calcular_indice_risco_fiscal(
 # -------------------------------------------------------------------
 # INDICE DE RISCO FISCAL v2 (Modelo Multidimensional — 6 sinais)
 # -------------------------------------------------------------------
+# Thresholds default (fallback quando nao ha calibracao empirica disponivel).
+# Sao os mesmos valores hardcoded originais — preservados aqui como piso de
+# compatibilidade, nao mais como unica fonte de verdade (ver calcular_calibracao_irf_v2()).
+THRESHOLDS_IRF_V2_DEFAULT = {
+    "divida_p95":    0.12,
+    "cambio_p95":    7.0,
+    "ipca_p95":      4.5,
+    "usdt_p95":      150.0,
+    "atividade_p95": 0.05,
+}
+
+
+def calcular_calibracao_irf_v2(df_sinais: pd.DataFrame) -> dict:
+    """Calibra os thresholds de normalizacao do IRF v2 a partir de dados reais.
+
+    Substitui as constantes hardcoded (0.12, 7.0, 4.5, 150, 0.05) por percentis
+    calculados empiricamente (p95) sobre a serie historica disponivel — mesma
+    logica do carregar_calibracao_score() em pipeline_compliance.py, adaptada
+    pro IRF. Deve ser recalculado sempre que o dataset historico crescer.
+
+    Espera colunas: divida_pib_var, brl_adj_dxy_30d, ipca_desvio_meta,
+    variacao_usdt_30d, ibc_br_var. Colunas ausentes ou com poucos dados (<30
+    observacoes) caem no fallback de THRESHOLDS_IRF_V2_DEFAULT.
+    """
+    def p95(serie: pd.Series, default: float) -> float:
+        s = serie.dropna()
+        s = s[s > 0]
+        if len(s) < 30:
+            return default
+        return round(float(np.percentile(s, 95)), 4)
+
+    vazio = pd.Series(dtype=float)
+    return {
+        "divida_p95": p95(df_sinais.get("divida_pib_var", vazio), THRESHOLDS_IRF_V2_DEFAULT["divida_p95"]),
+        "cambio_p95": p95(df_sinais.get("brl_adj_dxy_30d", vazio), THRESHOLDS_IRF_V2_DEFAULT["cambio_p95"]),
+        "ipca_p95": p95(df_sinais.get("ipca_desvio_meta", vazio), THRESHOLDS_IRF_V2_DEFAULT["ipca_p95"]),
+        "usdt_p95": p95(df_sinais.get("variacao_usdt_30d", vazio), THRESHOLDS_IRF_V2_DEFAULT["usdt_p95"]),
+        "atividade_p95": p95(-df_sinais.get("ibc_br_var", vazio), THRESHOLDS_IRF_V2_DEFAULT["atividade_p95"]),
+    }
+
+
 def calcular_irf_v2(
     score_tom_copom: float,
     brl_adj_dxy_30d: float,
@@ -433,7 +474,8 @@ def calcular_irf_v2(
     variacao_usdt_30d: float,
     divida_pib_var: float = 0.0,
     ibc_br_var: float = 0.0,
-    pesos: dict = None
+    pesos: dict = None,
+    thresholds: dict = None,
 ) -> float:
     """
     Calcula o Índice de Risco Fiscal v2 com 6 sinais ortogonais.
@@ -458,10 +500,16 @@ def calcular_irf_v2(
         ibc_br_var:       Variação % do IBC-Br (atividade econômica). Default: 0.
                           Negativo = recessão = maior fuga de capital.
         pesos:            Pesos por componente. Devem somar 1.0.
+        thresholds:       Divisores de normalização (p95) por sinal. Se None, usa
+                          THRESHOLDS_IRF_V2_DEFAULT (mesmos valores hardcoded originais).
+                          Gerar com calcular_calibracao_irf_v2() sobre dado real.
 
     Returns:
         Índice de 0 a 100 (maior = mais risco de fuga de capital).
     """
+    if thresholds is None:
+        thresholds = THRESHOLDS_IRF_V2_DEFAULT
+
     if pesos is None:
         # Pesos calibrados empiricamente com base na força da correlação:
         # Dívida/PIB: r=+0.707 (melhor preditor) → peso maior
@@ -476,39 +524,30 @@ def calcular_irf_v2(
             'atividade':0.10,  # Atividade econômica
         }
 
-    # Thresholds de normalização calibrados empiricamente (p95 dos dados reais 2022-2025):
-    # Cada sinal é mapeado para [0,1] onde 1 = nível de stress do percentil 95.
-    #
-    # DEBITO CONHECIDO: estes divisores sao constantes chumbadas de uma calibracao unica
-    # sobre a janela 2022-2025. Se o dataset crescer (mais anos), ficam desatualizados
-    # silenciosamente — mesma categoria de fragilidade que o score_min/score_max hardcoded
-    # do Isolation Forest tinha antes de ser corrigido (ver carregar_calibracao_score() em
-    # pipeline_compliance.py, calibracao salva como artefato em models/score_calibracao_v1.joblib).
-    # Fix correto: recalcular percentis a cada atualizacao de dado e versionar como artefato,
-    # nao como constante em codigo. Nao implementado ainda — escopo de ADR + mudanca em
-    # recalcular_irf.py, nao fix pontual.
+    # Thresholds de normalização: p95 calibrado empiricamente (thresholds param) ou
+    # fallback pra THRESHOLDS_IRF_V2_DEFAULT. Cada sinal é mapeado pra [0,1] onde
+    # 1 = nível de stress do percentil 95 — ver calcular_calibracao_irf_v2().
 
-    # 1. Sinal Dívida/PIB: variação mensal (p95 ≈ 0.10 pp)
-    #    Dividimos por 0.12 para que p95 ≈ 0.83 (abaixo de 1, mas próximo)
-    sinal_divida = min(max(divida_pib_var / 0.12, 0), 1)
+    # 1. Sinal Dívida/PIB: variação mensal
+    sinal_divida = min(max(divida_pib_var / thresholds["divida_p95"], 0), 1)
 
-    # 2. Sinal Câmbio ajustado DXY: desvalorização LOCAL do BRL (p95 ≈ +6.7%)
-    sinal_cambio = min(max(brl_adj_dxy_30d / 7.0, 0), 1)
+    # 2. Sinal Câmbio ajustado DXY: desvalorização LOCAL do BRL
+    sinal_cambio = min(max(brl_adj_dxy_30d / thresholds["cambio_p95"], 0), 1)
 
-    # 3. Sinal IPCA: desvio da meta (meta = 3%; p95 histórico ≈ +4-5 pp)
-    sinal_ipca = min(max(ipca_desvio_meta / 4.5, 0), 1)
+    # 3. Sinal IPCA: desvio da meta (meta = 3%)
+    sinal_ipca = min(max(ipca_desvio_meta / thresholds["ipca_p95"], 0), 1)
 
     # 4. Sinal Copom: dovish = risco (sem âncora)
     sinal_copom = 1 - score_tom_copom
 
-    # 5. Sinal USDT/Stablecoins: variação 30d (p95 ≈ +150%)
+    # 5. Sinal USDT/Stablecoins: variação 30d
     #    Logaritmo suaviza os outliers extremos (ex: +421% em pico FTX)
     import math
-    usdt_log = math.log1p(max(variacao_usdt_30d, 0)) / math.log1p(150)
+    usdt_log = math.log1p(max(variacao_usdt_30d, 0)) / math.log1p(thresholds["usdt_p95"])
     sinal_usdt = min(usdt_log, 1)
 
-    # 6. Sinal Atividade: recessão (IBC-Br, variação; p95 negativo ≈ -0.04)
-    sinal_atividade = min(max(-ibc_br_var / 0.05, 0), 1)
+    # 6. Sinal Atividade: recessão (IBC-Br, variação)
+    sinal_atividade = min(max(-ibc_br_var / thresholds["atividade_p95"], 0), 1)
 
     indice = (
         sinal_divida    * pesos['divida']   +

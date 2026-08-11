@@ -56,6 +56,23 @@ Os números acima (linhas 22-26) foram calculados numa máquina cuja cópia loca
 
 Isso não invalida a tese, mas é um lembrete do próprio "Delta de raciocínio" abaixo: número que parece confirmar a predição pode estar certo por acidente metodológico, não por mecanismo — vale sempre checar se o pipeline que gerou o número tinha as salvaguardas que o projeto real já tinha implementado.
 
+## Adendo 2 — recálculo com calibração do IRF v2 corrigida (2026-08-11)
+
+Ao corrigir o débito técnico "thresholds hardcoded do IRF v2" (mesma categoria de fragilidade do bug de calibração do Isolation Forest, já corrigido — ver `AGENTS.md`), descobrimos que o threshold de IPCA estava chumbado em `4.5`, mas o valor real calibrado empiricamente (p95 sobre 2022-2025) é **`11,4`** — 2,5x maior. O sinal de IPCA estava saturando com muito mais facilidade do que os dados reais justificam, distorcendo o IRF v2 pra cima.
+
+Corrigido e recalculado (dataset_irf_completo.csv regenerado, modelo retreinado, ablação rerodada):
+
+| Métrica | Sem IRF | Adendo 1 (lag corrigido, calibração ainda hardcoded) | Adendo 2 (lag + calibração corrigidos) |
+|---|---|---|---|
+| Precisão | 35,9% | 45,2% | **44,8%** |
+| Recall | 34,4% | 43,9% | **49,9%** |
+| Falso positivo (poupador legítimo) | 1,5% | 3,5% (2,3x) | **5,0% (3,3x)** |
+| Transações que mudam de classificação | — | 16,9% | **18,3%** |
+
+**O veredito continua não mudando** — precisão e recall seguem melhorando com o IRF, o critério de falsificação não dispara. Mas repare que o custo do falso positivo **subiu de novo** (2,3x → 3,3x) — quase de volta ao número da versão com vazamento de dado (3,5x). Isso não é contradição, é o que acontece quando duas correções independentes empurram o resultado em direções opostas: o lag reduzia o trade-off, a recalibração do IPCA aumentou o recall (mais casos reais pegos) à custa de mais falso positivo.
+
+**Leitura honesta:** depois de 3 rodadas de correção, o número exato do trade-off oscilou entre 2,3x e 3,5x — não convergiu pra um valor único e estável. O que **não** oscilou foi a direção (IRF sempre melhora precisão/recall, sempre custa mais falso positivo). Pra portfólio, a afirmação defensável é qualitativa ("existe trade-off real, na faixa de 2-3,5x"), não o número de 1 casa decimal — reportar `3,5x` como se fosse preciso seria falsa precisão, dado quanto ele já se moveu entre correções de bug.
+
 ## Os 150
 
 A tese do projeto foca em um analytics de blockchain AML que possui uma vantagem competitiva frente aos players já consolidados que possuem modelo robusto, produtização, escala e etc. A nossa vantagem se resume na adição da visão econômica com o comportamento humano. Isso vem com 3 condições: pitch precisa mudar, reposicionar como nicho não-enterprise, testar distribuição real. O principal achado é o trade-off de que, com IRF, aumentamos a precisão dos flagados, porém aumentamos o falso positivo (poupador legítimo flagado à toa — 1,6% → 5,6%).
