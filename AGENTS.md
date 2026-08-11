@@ -26,7 +26,7 @@
 - **Backend**: FastAPI (`src/api.py`) — CORS restrito, API key middleware
 - **Frontend**: Streamlit (`app.py`) — dark mode, responsivo
 - **ML**: Isolation Forest (scikit-learn) — detecção de anomalias
-- **LLM**: Gemini 2.5 Flash — Camada 3 (LLM-as-Judge), opcional, implementada em `agente_rag.py` + `executar_camada3_llm()`
+- **LLM**: Gemini 2.5 Flash — Camada 3 (LLM-as-Judge), opcional, implementada em `agente_rag.py` + `executar_camada3_llm()`, validada com chamada real em 2026-08-11 (RAG com contexto de ata do Copom confirmado no output, não é só fallback)
 - **Container**: Docker + Docker Compose (non-root user)
 
 ---
@@ -44,7 +44,7 @@
 | **Score contextual** | Score de anomalia que muda de significado dependendo do cenário macro do dia (via IRF), não um score fixo por padrão de transação isolado. |
 | **Camada 1** | Filtros determinísticos das Resoluções BCB 519-521/2026 (R1-R5). |
 | **Camada 2** | Isolation Forest com IRF como feature contextual. |
-| **Camada 3** | LLM-as-Judge com RAG temporal (atas do Copom) — implementada, ativa via `LLM_JUDGE_ENABLED=true` + `GEMINI_API_KEY`. |
+| **Camada 3** | LLM-as-Judge com RAG temporal (atas do Copom) — implementada **e validada com chamada real ao Gemini 2.5 Flash em 2026-08-11** (não só fallback), ativa via `LLM_JUDGE_ENABLED=true` + `GEMINI_API_KEY`. |
 | **VERDE / AMARELO / VERMELHO** | Classificação final por `score_final` (buckets 0-40/40-70/70-100). Não confundir com `c2_classificacao` (normal/cinza/suspeito), saída intermediária só da Camada 2. |
 | **wallets_unicas** | Contagem de wallets distintas **por dia** (regra R3). Não confundir com `entropia_wallets` (dispersão no histórico inteiro do usuário — escopo diferente). |
 | **COAF** | Conselho de Controle de Atividades Financeiras. |
