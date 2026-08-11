@@ -1,174 +1,145 @@
-# PROBLEM.md — Contrato AI Scientist: Shadow FX Terminal
+# PROBLEM.md — o raciocínio de negócio por trás do Shadow FX Terminal
 
-> *Este documento registra o raciocínio de negócio e as decisões técnicas fundamentais do projeto, na perspectiva de um AI Scientist orientado a valor.*
-
----
-
-##  A Origem: Dois Catalisadores, Um Projeto
-
-### Catalisador 1 — O Paper
-Tudo começou com a leitura do paper *"Dolarização Informal: Stablecoins como resposta à instabilidade monetária brasileira"* (Paulo J. Britto, OTC Research, 2026).
-
-O **objetivo inicial** era puramente analítico: **validar e expandir a análise estatística** do paper com dados reais. A tese central é que o brasileiro compra USDT não para especular em cripto, mas como mecanismo de *hedge* contra a desvalorização estrutural do Real — o mesmo comportamento que leva famílias a guardar dólar em casa durante crises cambiais, só que na forma digital.
-
-### Catalisador 2 — O Evento de Mercado
-O segundo vetor de inspiração veio de um evento do mercado financeiro sobre **novas fronteiras de segurança financeira no ecossistema digital pós-fraudes**. O evento levantou um problema que os bancos e corretoras brasileiras ainda não resolveram: como criar um sistema de compliance que seja simultaneamente:
-
-- **Sensível o suficiente** para capturar fraudes sofisticadas (smurfing, lavagem via bets, evasão de divisas)
-- **Específico o suficiente** para não bloquear o cidadão legítimo que responde racionalmente a uma crise macroeconômica
-
-O insight chave extraído: *"O comportamento financeiro só faz sentido se você conhece o contexto macroeconômico do momento."* Essa frase se tornou o princípio de design do IRF (Índice de Risco Fiscal).
+Este documento registra por que o projeto existe, as perguntas que ele tentou responder e as decisões técnicas que vieram dessas respostas.
 
 ---
 
-## ❓ As Perguntas Fundamentais
+## A origem: dois catalisadores, um projeto
 
-O projeto foi estruturado em torno de **três perguntas progressivas**, cada uma respondida por uma fase do pipeline:
+### Catalisador 1 — o paper
+
+Tudo começou com a leitura de *"Dolarização Informal: Stablecoins como resposta à instabilidade monetária brasileira"* (Paulo J. Britto, OTC Research, 2026).
+
+O objetivo inicial era puramente analítico: validar e expandir a análise estatística do paper com dado real. A tese central é que o brasileiro compra USDT não pra especular em cripto, mas como hedge contra a desvalorização estrutural do Real — o mesmo comportamento que leva família a guardar dólar em casa numa crise cambial, só que na forma digital.
+
+### Catalisador 2 — o evento de mercado
+
+O segundo empurrão veio de um evento sobre as novas fronteiras de segurança financeira no digital pós-fraudes. A pergunta que ficou foi: como criar um sistema de compliance sensível o suficiente pra capturar fraude sofisticada (smurfing, lavagem via bets, evasão de divisas) e específico o suficiente pra não bloquear o cidadão comum que está só reagindo racionalmente a uma crise macroeconômica?
+
+O insight que ficou: o comportamento financeiro só faz sentido se você conhece o contexto macroeconômico do momento. Essa frase virou o princípio de design do IRF.
 
 ---
 
-### Pergunta 1 (Econométrica): O brasileiro usa stablecoin como dólar de colchão?
+## As perguntas fundamentais
 
-**Por que essa pergunta importa:**
-Se a hipótese for verdadeira, a compra de USDT em períodos de câmbio alto não é crime financeiro — é comportamento racional de preservação de capital. Um sistema de AML que não entende isso vai gerar uma enxurrada de falsos positivos, punindo o cidadão comum.
+O projeto foi estruturado em torno de três perguntas progressivas, cada uma respondida por uma fase do pipeline.
 
-**Como respondemos:**
+### Pergunta 1 (econométrica): o brasileiro usa stablecoin como dólar de colchão?
 
-A resposta não veio de um dado único, mas de uma **cadeia de 5 evidências convergentes**:
+Se a hipótese for verdadeira, comprar USDT num período de câmbio alto não é crime financeiro, é comportamento racional de preservação de capital. Um sistema de AML que não entende isso vai gerar enxurrada de falso positivo, punindo o cidadão comum.
+
+A resposta não veio de um dado único, veio de uma cadeia de 5 evidências convergentes:
 
 | # | Evidência | Resultado | O que prova |
-|:--|:---|:---:|:---|
-| 1 | Spearman (BRL/USD × Volume USDT global) | r = +0.496 ✅ | Co-movimento existe entre câmbio e demanda por stablecoin |
-| 2 | Correlação Parcial controlando DXY | −2.5% de redução | **Não é efeito do dólar global** — o sinal é específico do BRL |
-| 3 | Google Trends `geo='BR'` × BRL/USD | r = +0.501 ✅ | O interesse em USDT é especificamente **brasileiro** |
-| 4 | Lead-Lag: BRL[t−1] → Interesse BR[t] | r = +0.508 ✅ | O câmbio **precede** o interesse — há direcionalidade causal |
-| 5 | Dívida Bruta/PIB × Volume USDT | r = +0.707 ✅ | A raiz é **dominância fiscal estrutural**, não volatilidade de curto prazo |
+|:--|---|:---:|---|
+| 1 | Spearman (BRL/USD × volume USDT global) | r = +0,496, significativo | co-movimento entre câmbio e demanda por stablecoin |
+| 2 | Correlação parcial controlando DXY | queda de −2,5% | não é efeito do dólar global — o sinal é específico do BRL |
+| 3 | Google Trends `geo='BR'` × BRL/USD | r = +0,501, significativo | o interesse em USDT é especificamente brasileiro |
+| 4 | Lead-lag: BRL[t−1] → interesse BR[t] | r = +0,508, significativo | o câmbio precede o interesse — há direcionalidade causal |
+| 5 | Dívida bruta/PIB × volume USDT | r = +0,707, significativo | a raiz é dominância fiscal estrutural, não volatilidade de curto prazo |
 
-**Resposta:** Sim, com suporte metodológico robusto. O fenômeno é real, é brasileiro, tem direcionalidade causal e é rastreável a fundamentos macroeconômicos estruturais — não apenas a choques de câmbio.
+Resposta: sim, com suporte metodológico razoável. O fenômeno é real, é brasileiro, tem direcionalidade causal e é rastreável a fundamento macroeconômico estrutural — não é só reação a choque de câmbio.
+
+### Pergunta 2 (regulatória): por que a nova regra do BCB cria um problema de compliance?
+
+Com as Resoluções BCB 519-521/2026 equiparando stablecoin a câmbio, toda corretora passou a ter obrigação legal de reportar operação suspeita ao COAF. O problema é que a maioria ainda usa regra fixa pra detectar suspeita.
+
+Um cenário real ilustra o problema — dia 16/10/2024, BRL = R$ 6,28, IRF = 87/100:
+
+- **Cidadão A, o poupador assustado.** Compra R$ 8.500 de USDT às 14h via Pix. Motivo real: câmbio disparou, quer proteger o 13º salário.
+- **Criminoso B, o fracionador profissional.** Faz 9 transferências de R$ 8.900 pra wallets diferentes entre 2h e 4h da manhã. Motivo real: smurfing pra fugir do limite de R$ 10k da Resolução BCB 519.
+
+Com regra tradicional: Cidadão A é flagado (valor perto do limiar), o analista perde tempo, o cidadão fica frustrado. Criminoso B passa, porque cada transação isolada está "abaixo do limite".
+
+O que a regra fixa não enxerga é o contexto macroeconômico que torna o comportamento do Cidadão A previsível e legítimo, e o padrão do Criminoso B que só aparece quando você olha o conjunto — horário, distribuição de wallets, valor agregado.
+
+Resposta: regra fixa falha porque é cega ao contexto. Comprar R$ 8.500 de USDT num dia de câmbio estável é estatisticamente diferente da mesma compra num dia de stress fiscal elevado. Threshold fixo não capta essa distinção.
+
+### Pergunta 3 (técnica): como construir isso de forma escalável?
+
+Uma corretora de médio porte processa centenas de milhares de transações por mês. Mandar tudo pra um analista humano é inviável. Mandar tudo pra um LLM é caro e lento. A resposta precisa ser inteligente e barata ao mesmo tempo.
+
+A arquitetura em cascata resolve isso:
+
+```
+Camada 1 — filtros determinísticos (BCB 519-521)
+  custo ~0ms, cobre ~87% dos casos
+  as regras existem e precisam ser aplicadas
+  caso verde passa direto, caso com flag vai pra C2
+
+Camada 2 — Isolation Forest + IRF
+  custo ~1ms, cobre ~13% dos casos
+  o comportamento é anômalo ou descorrelacionado do cenário macro?
+  diferencia hedge (segue o câmbio) de anomalia grave (volume massivo em calmaria)
+  caso vermelho é reportado, zona cinza vai pra C3
+
+Camada 3 — LLM como juiz (agente RAG + atas do Copom)
+  custo ~2s, cobre ~0,2% dos casos mais ambíguos
+  lê a ata recente e julga se aquele perfil de risco é esperado
+  gera rascunho de RIF pro COAF
+```
+
+A inovação central é o IRF como feature contextual: injetar o índice como variável do modelo transforma um classificador comportamental num sistema que entende quando o comportamento é suspeito, não só como ele parece.
+
+Resposta: um pipeline em cascata onde cada camada resolve o trivial e passa o complexo adiante. A eficiência vem da hierarquia, a inteligência vem do IRF.
 
 ---
 
-### Pergunta 2 (Regulatória): Por que as novas regras do BCB criam um problema de compliance?
+## O trade-off real, medido — o preço da inovação central
 
-**Por que essa pergunta importa:**
-Com as Resoluções BCB 519-521/2026 equiparando stablecoins a câmbio, toda corretora passou a ter obrigação legal de reportar operações suspeitas ao COAF. O problema: a maioria ainda usa regras fixas para detectar suspeitas.
-
-**O diagnóstico do problema:**
-
-```
-CENÁRIO REAL — dia 16/10/2024 (BRL = R$ 6,28, IRF = 87/100):
-
-[CIDADÃO A] — Poupador Assustado
-  Compra R$ 8.500 de USDT às 14h via PIX.
-  Motivo real: câmbio disparou, quer proteger o 13º salário.
-
-[CRIMINOSO B] — Fracionador Profissional
-  Faz 9 transferências de R$ 8.900 para wallets diferentes entre 2h e 4h da manhã.
-  Motivo real: smurfing para fugir do limite de R$ 10k da Resolução BCB 519.
-
-[SISTEMA TRADICIONAL DE REGRAS]
-  → Cidadão A: FLAG (valor próximo ao limiar) → Analista perde tempo → frustração
-  → Criminoso B: PASSA (cada transação individual está "abaixo do limite")
-```
-
-**O que os sistemas tradicionais não conseguem ver:** o contexto macroeconômico que torna o comportamento do Cidadão A previsível e legítimo, e o padrão comportamental do Criminoso B que só aparece quando você analisa o conjunto das transações + horário + distribuição de wallets.
-
-**Resposta:** As regras fixas falham porque são cegas ao contexto. A compra de R$ 8.500 de USDT em um dia de câmbio estável é estatisticamente diferente da mesma compra em um dia de stress fiscal elevado. Nenhum threshold fixo captura essa distinção.
-
----
-
-### Pergunta 3 (Técnica): Como construir um sistema que faça essa distinção de forma escalável?
-
-**Por que essa pergunta importa:**
-Uma corretora de médio porte processa centenas de milhares de transações por mês. Mandar tudo para um analista humano é inviável. Mandar tudo para um LLM é caro e lento. A solução precisa ser ao mesmo tempo inteligente e eficiente.
-
-**Como respondemos — Arquitetura em 3 Camadas (Cascaded Pipeline):**
-
-```
-CAMADA 1 — Filtros Determinísticos (BCB 519-521)
-  → Custo: ~0ms | Cobre: ~87% dos casos
-  → "As regras existem e precisam ser aplicadas."
-  → Casos VERDES passam direto. Casos com flags vão para C2.
-
-CAMADA 2 — Isolation Forest + IRF (Machine Learning + Contexto Macro)
-  → Custo: ~1ms | Cobre: ~13% dos casos
-  → "O comportamento é anômalo ou descorrelacionado do cenário macroeconômico?"
-  → O modelo diferencia o **Hedge** (compra que segue o câmbio) de **Anomalias Graves** (volumes massivos em momentos de calmaria cambial).
-  → Casos VERMELHOS são reportados. Zona cinza vai para C3.
-
-CAMADA 3 — LLM-as-Judge (Agente RAG + Atas do Copom)
-  → Custo: ~2s | Cobre: ~0.2% dos casos mais ambíguos
-  → "Leia as últimas atas do Copom e julgue se esse perfil de risco é esperado."
-  → Gera rascunho de Relatório de Inteligência Financeira (RIF) para o COAF.
-```
-
-**A inovação central — o IRF como Feature Contextual:**
-Injetar o Índice de Risco Fiscal como variável do modelo de ML transforma um classificador comportamental num sistema que entende *quando* o comportamento é suspeito — não apenas *como* ele parece.
-
-**Resposta:** Um pipeline em cascata onde cada camada resolve o que é trivial e passa o complexo para a camada seguinte. A eficiência vem da hierarquia; a inteligência vem do IRF.
-
----
-
-## ⚠️ Trade-off Real Medido — o Preço da Inovação Central
-
-A seção anterior descreve o que o IRF **deveria** fazer: distinguir Cidadão A de Criminoso B sem custo para nenhum dos dois. Testado contra o rótulo de verdade do dataset sintético (`docs/tese/shadow-fx-vantagem-competitiva/TESE.md`, veredito 2026-08-10, recalculado em 2 rodadas de correção de bug em 2026-08-11), a realidade tem um trade-off que a narrativa acima não capturava:
+A seção anterior descreve o que o IRF deveria fazer: distinguir Cidadão A de Criminoso B sem custo pra nenhum dos dois. Testado contra o rótulo de verdade do dataset sintético (`docs/tese/shadow-fx-vantagem-competitiva/TESE.md`, veredito 2026-08-10, recalculado em 2 rodadas de correção de bug em 2026-08-11), a realidade tem um trade-off que a narrativa acima não captura:
 
 | Métrica | Sem IRF | Com IRF |
 |---|---|---|
-| Precisão (dos flagados, % que eram fraude real) | 35,9% | **44,8%** ✅ |
-| Recall (dos fraudadores reais, % detectados) | 34,4% | **49,9%** ✅ |
-| Falso positivo (poupador legítimo flagado à toa) | 1,5% | **5,0%** ⚠️ (2,3x–3,5x conforme a rodada de calibração) |
+| Precisão (dos flagados, % que era fraude real) | 35,9% | 44,8% |
+| Recall (dos fraudadores reais, % detectado) | 34,4% | 49,9% |
+| Falso positivo (poupador legítimo flagado à toa) | 1,5% | 5,0% (2,3x a 3,5x conforme a rodada de calibração) |
 
-**O que isso significa, sem retórica:** o IRF pega mais fracionador de verdade — mas em troca, incomoda mais Cidadão A (o "Poupador Assustado" que este projeto existe pra proteger). Não é um resultado que invalida o projeto — a tese sobreviveu ao teste de falsificação em todas as 3 versões testadas (precisão e recall sempre melhoram, não é ruído aleatório) — mas é uma tensão real entre os dois objetivos declarados na Pergunta 2, não uma solução que resolve os dois sem custo. O multiplicador exato do falso positivo (2,3x a 3,5x) se moveu a cada bug de calibração corrigido — reportado como faixa, não número fixo, porque é a leitura honesta (ver `TESE.md`, Adendo 2).
+O que isso significa, sem retórica: o IRF pega mais fracionador de verdade, mas em troca incomoda mais o Cidadão A — o poupador assustado que o projeto existe pra proteger. Isso não invalida o projeto — a tese sobreviveu ao teste de falsificação nas 3 versões testadas, precisão e recall sempre melhoraram, não é ruído — mas é uma tensão real entre os dois objetivos da Pergunta 2, não uma solução que resolve os dois sem custo. O multiplicador exato do falso positivo (2,3x a 3,5x) se moveu a cada bug de calibração corrigido, então é reportado como faixa, não número fixo — é a leitura honesta (ver `TESE.md`, adendo 2).
 
-**Decisão registrada:** aceitar o trade-off como está e documentá-lo (não tunar o modelo pra reduzir o falso positivo), porque o dataset é sintético — otimizar contra ele arrisca ajustar pra ruído que não existe em produção real. Ver `docs/wayfinder/tese-veredito-condicoes/0001-tunar-ou-aceitar-trade-off.md`.
-
----
-
-## 🎯 Vantagem Competitiva — Por Que Isso Não É Só Mais um Score de Anomalia
-
-O mercado de blockchain analytics/AML já é dominado por players consolidados — Chainalysis, TRM Labs, Elliptic — com modelo robusto, infraestrutura, clientes e centenas de milhões em captação. Nenhum dos três compete de frente com **modelo melhor**: eles têm mais dado, mais engenharia, mais tempo de mercado. A vantagem deste projeto está em outro eixo: **abordagem econômica (contexto macro-fiscal como feature) + especificidade regulatória brasileira**, não em "detectar melhor" no sentido genérico.
-
-**Por que "detectar melhor" não é o argumento certo:** já vimos acima que o ganho de precisão vem com custo real (mais falso positivo). Um discurso de "nosso modelo é mais preciso" sem essa ressalva seria capengo o suficiente pra qualquer avaliador técnico derrubar em 5 minutos.
-
-**Por que "nicho porque eles não têm orçamento" também não é o argumento certo:** essa foi a primeira hipótese testada — e caiu contra um fato real. VASP autorizada no Brasil precisa de capital mínimo de R$ 10,8 milhões por lei (fonte: NDM Advogados) — não é startup sem grana pagando US$50-200K/ano de Chainalysis.
-
-**O argumento que sobreviveu ao teste:** complexidade regulatória brasileira dinâmica, que um player global genérico não tem incentivo de negócio pra acompanhar de perto.
-- **~7 mudanças regulatórias relevantes em ~18 meses** — Lei 14.478/2022, 4 consultas públicas (2023-2024), Resoluções BCB 519/520/521 (nov/2025), Resolução 561, IN BCB 701/2026, mudança de IOF sobre stablecoin (fev/2026). Fonte: Agência Brasil, Mattos Filho, Forbes.
-- **Nenhuma evidência pública** de Chainalysis, TRM Labs ou Elliptic tratando o Brasil como mercado prioritário — sem expansão anunciada, sem feature específica pra resolução BCB encontrada em busca dedicada.
-- **Volume real que sustenta a demanda**: R$ 388 bilhões declarados em criptoativos por brasileiros em 9 meses de 2025, mais de 70% em stablecoins. Fonte: Blue Consult.
-
-**A ressalva que fica, com honestidade:** essa é uma tese bem fundamentada em fato público, não uma opinião solta — mas continua sendo **raciocínio, não validação de mercado**. O teste que faltaria pra virar validação (alguém de uma exchange brasileira confirmando que já não resolveu isso sozinho, ou que valorizaria essa especificidade) ainda não foi feito. Ver `docs/tese/shadow-fx-vantagem-competitiva/TESE.md` (veredito completo, com as 5 lentes) e `docs/wayfinder/tese-veredito-condicoes/0005-roteiro-distribuicao-real.md` (roteiro da conversa pendente).
+Decisão registrada: aceitar o trade-off como está e documentá-lo, sem tunar o modelo pra reduzir o falso positivo, porque o dataset é sintético — otimizar em cima dele arrisca ajustar pra um ruído que não existe em produção real. Ver `docs/wayfinder/tese-veredito-condicoes/0001-tunar-ou-aceitar-trade-off.md`.
 
 ---
 
-##  Valor de Negócio & ROI
+## Vantagem competitiva — por que isso não é só mais um score de anomalia
 
-| Stakeholder | Problema Resolvido | Valor Gerado |
-|:---|:---|:---|
-| **Corretoras de Cripto** | Falsos positivos bloqueando clientes legítimos | **Contexto reduz falso positivo vs. regra fixa incondicional — mas não o zera; aumenta relativo ao modelo sem IRF (ver trade-off acima). Reduz fadiga de analista via priorização, não elimina revisão humana.** |
-| **Bancos e Fintechs** | Compliance cego ao contexto macroeconômico | Sistema de AML que pondera crise vs. crime — com precisão mensurada, não hipotética (44,8% vs 35,9%) |
-| **Reguladores (BCB/COAF)** | Excesso de reportes baixa qualidade que ocultam os reais | Reportes mais precisos com rascunho automatizado via LLM |
-| **Mercado de Dados** | Validação independente e data-driven do paper de Britto (2026) | Evidência econométrica com cadeia de 5 provas convergentes |
+O mercado de blockchain analytics/AML já é dominado por Chainalysis, TRM Labs, Elliptic — modelo robusto, infraestrutura, clientes, centenas de milhões em captação. Nenhum dos três compete de frente em "modelo melhor": eles têm mais dado, mais engenharia, mais tempo de mercado. A vantagem deste projeto está em outro eixo — contexto macro-fiscal como feature, mais especificidade regulatória brasileira — não em detectar melhor no sentido genérico.
+
+"Detectar melhor" não é o argumento certo, porque o ganho de precisão vem com custo real (mais falso positivo, como visto acima). Um discurso de "nosso modelo é mais preciso" sem essa ressalva cairia em 5 minutos na frente de qualquer avaliador técnico.
+
+"Nicho porque eles não têm orçamento pra atender" também não é o argumento certo — foi a primeira hipótese testada, e caiu contra um fato real: VASP autorizada no Brasil precisa de capital mínimo de R$ 10,8 milhões por lei (fonte: NDM Advogados). Não é startup sem grana disputando com quem paga US$ 50-200K/ano de Chainalysis.
+
+O argumento que sobreviveu ao teste é a complexidade regulatória brasileira dinâmica, que um player global genérico não tem incentivo de negócio pra acompanhar de perto:
+
+- Cerca de 7 mudanças regulatórias relevantes em 18 meses — Lei 14.478/2022, 4 consultas públicas (2023-2024), Resoluções BCB 519/520/521 (nov/2025), Resolução 561, IN BCB 701/2026, mudança de IOF sobre stablecoin (fev/2026). Fonte: Agência Brasil, Mattos Filho, Forbes.
+- Nenhuma evidência pública de Chainalysis, TRM Labs ou Elliptic tratando o Brasil como mercado prioritário — sem expansão anunciada, sem feature específica pra resolução do BCB encontrada em busca dedicada.
+- Volume real que sustenta a demanda: R$ 388 bilhões declarados em criptoativo por brasileiro em 9 meses de 2025, mais de 70% em stablecoin. Fonte: Blue Consult.
+
+A ressalva que fica, com honestidade: essa tese é bem fundamentada em fato público, não é opinião solta — mas continua sendo raciocínio, não validação de mercado. O teste que faltaria pra virar validação — alguém de uma exchange brasileira confirmando que ainda não resolveu isso sozinho, ou que valorizaria essa especificidade — ainda não foi feito. Ver `docs/tese/shadow-fx-vantagem-competitiva/TESE.md` (veredito completo) e `docs/wayfinder/tese-veredito-condicoes/0005-roteiro-distribuicao-real.md` (roteiro da conversa pendente).
 
 ---
 
-##  Nota Metodológica — Limitação de Atribuição Geográfica
+## Valor de negócio e ROI
 
-### O que o paper reconhece
-O paper de Britto (2026) admite explicitamente que os dados on-chain (volume de USDT em blockchain) são **globais** — não permitem identificar se quem comprou USDT foi um brasileiro, um argentino ou um turco. Para resolver isso, o paper cruza com dados de busca web geolocalizados como proxy de demanda doméstica.
+| Stakeholder | Problema resolvido | Valor gerado |
+|---|---|---|
+| Corretoras de cripto | Falso positivo bloqueando cliente legítimo | Contexto reduz falso positivo frente a regra fixa incondicional, mas não zera — reduz relativo ao modelo sem IRF (ver trade-off acima). Reduz fadiga do analista via priorização, não elimina revisão humana |
+| Bancos e fintechs | Compliance cego ao contexto macroeconômico | Sistema de AML que pondera crise vs. crime, com precisão medida, não hipotética (44,8% vs. 35,9%) |
+| Reguladores (BCB/COAF) | Excesso de reporte de baixa qualidade escondendo os reais | Reporte mais preciso, com rascunho automatizado via LLM |
+| Mercado de dados | Validação independente do paper de Britto (2026) | Evidência econométrica com cadeia de 5 provas convergentes |
 
-### Como este projeto replica e expande essa metodologia
-Utilizamos o Google Trends filtrado exclusivamente para o Brasil (`geo='BR'`) — 183 semanas de dados semanais — combinado com análise de Lead-Lag e correlação parcial controlando o DXY (dólar global). O resultado é a **cadeia de 5 evidências** descrita na Pergunta 1.
+---
 
-### Onde estão os scripts
-- `src/coletar_google_trends_br.py` — Coleta dados do Google Trends (`geo='BR'`)
-- `src/validacao_atribuicao_geografica.py` — Executa os 5 testes de viés geográfico
-- `src/validacao_estatistica.py` — Correlação parcial, Lead-Lag e simulação de estresse
-- `src/analise_correlacao.py` — Relatório completo da cadeia de evidências
+## Nota metodológica — limitação de atribuição geográfica
 
-### Limitações residuais (honestidade científica)
-- Google Trends é índice relativo (0–100), não volume absoluto de compras.
-- Volume USDT do yfinance é global — proxy de fluxo, não de origem geográfica.
-- Dados on-chain georreferenciados (Chainalysis, Glassnode Pro) removeriam ambiguidades, mas são pagos (~USD 999/mês).
-- A cadeia de evidências constitui **suporte robusto, não prova definitiva** sem dados on-chain localizados. Essa limitação é documentada explicitamente seguindo o padrão de transparência científica do paper original.
+O paper de Britto (2026) admite que o dado on-chain (volume de USDT em blockchain) é global — não dá pra identificar se quem comprou foi brasileiro, argentino ou turco. Pra resolver isso, o paper cruza com dado de busca web geolocalizado como proxy de demanda doméstica.
+
+Este projeto replica e expande essa metodologia usando Google Trends filtrado pra `geo='BR'` — 183 semanas de dado semanal — combinado com lead-lag e correlação parcial controlando o DXY. O resultado é a cadeia de 5 evidências da Pergunta 1.
+
+**Onde estão os scripts:**
+- `src/coletar_google_trends_br.py` — coleta o Google Trends com `geo='BR'`
+- `src/validacao_atribuicao_geografica.py` — roda os 5 testes de viés geográfico
+- `src/validacao_estatistica.py` — correlação parcial, lead-lag e simulação de estresse
+- `src/analise_correlacao.py` — relatório completo da cadeia de evidências
+
+**Limitações residuais:** Google Trends é índice relativo (0-100), não volume absoluto de compra. O volume USDT do yfinance é global, é proxy de fluxo, não de origem geográfica. Dado on-chain georreferenciado (Chainalysis, Glassnode Pro) removeria essa ambiguidade, mas custa cerca de USD 999/mês. A cadeia de evidências é suporte razoável, não prova definitiva, sem dado on-chain localizado — essa limitação é documentada explicitamente, seguindo o padrão de transparência do paper original.

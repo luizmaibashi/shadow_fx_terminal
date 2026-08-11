@@ -49,5 +49,12 @@ data/raw/__pycache__/
 *.png
 [0-9]*.pdf
 
+# Screenshots do dashboard usados no README — excecao deliberada
+!reports/streamlit_scanner_green.png
+!reports/streamlit_scanner_red_coaf.png
+
 # Planejamento e Estratégia de Mídia (Privado)
 docs/linkedin_post_strategy.md
+
+# Cache de linter
+.ruff_cache/
