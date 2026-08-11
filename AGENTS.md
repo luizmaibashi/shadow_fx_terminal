@@ -98,8 +98,14 @@ Herdado de `TESE.md`: **a tese/projeto "falha" se, medido contra o rótulo de ve
 
 1. Dados em memória (DataFrame) — não escala para milhões de transações. *(aceito conscientemente via ADR-0006)*
 2. Sem banco de dados — dados voláteis entre restarts. *(mesmo débito do item 1, ADR-0006)*
+3. **`starlette` preso em 1.3.1** (várias vulnerabilidades altas/médias do Dependabot) — não dá pra atualizar pra 1.6.0 porque `streamlit<1.4.0,>=0.46.0` exige essa faixa. Só resolve atualizando o Streamlit pra uma versão que aceite starlette mais novo, ou trocando o dashboard de framework — nenhuma das duas é trivial. Registrado, não corrigido.
+4. **Resíduo de vulnerabilidades do stack Jupyter** (`jupyterlab`, `notebook`, `tornado`, `mistune` — usados só pelos 3 notebooks CRISP-DM, não em produção) — sem fix publicado ainda na maioria dos casos (`pip list --outdated` não aponta nova versão disponível). Superfície de risco baixa porque não roda em produção/API, mas fica registrado.
 
 Nenhum outro débito técnico aberto no momento — os 4 que restavam (CI/CD, timestamp malformado, `preparar_prompt_llm` arquitetural, thresholds do IRF v2) foram corrigidos em 2026-08-11 (ver abaixo). Só a conversa real do Ticket 0005 (`docs/wayfinder/tese-veredito-condicoes/`) segue pendente — ação humana, fora do escopo de código.
+
+### Auditoria de dependências — 2026-08-11
+
+GitHub Dependabot acusou **136 vulnerabilidades** (2 críticas, 66 altas) logo após o primeiro push. Investigado: `requirements-lock.txt` tinha sido gerado com `pip freeze` direto no Python desta máquina, que captura o ambiente **inteiro** (inclusive ferramentas de outros projetos do usuário — `torch`, `pyspark`, `langchain`, `chromadb`, `GitPython`, nenhum usado por este projeto). Regenerado a partir de um venv limpo, instalando só `requirements.txt`: **163 pacotes, não ~300** — eliminou as 2 críticas e a maioria das altas (nenhuma delas era dependência real do projeto). 60/60 testes confirmados rodando nesse ambiente limpo. Achado colateral: `scikit-learn` sobe pra 1.9.0 no lock novo, mas o modelo treinado (`isolation_forest_v1.joblib`) foi salvo com 1.8.0 — funciona (aviso de compatibilidade, não erro), mas é fragilidade de reprodutibilidade real, não corrigida (exigiria fixar a versão ou retreinar).
 
 ### Corrigidos em 2026-08-11 (Blind Spot Pass + reconciliação com histórico real)
 
