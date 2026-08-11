@@ -66,6 +66,34 @@ def recuperar_contexto_copom(data_transacao: pd.Timestamp) -> str:
     )
     return resumo
 
+def preparar_prompt_llm(transacao: pd.Series) -> str:
+    """Gera o prompt curto para exibicao/preview do LLM-as-judge (casos 'cinza').
+
+    Nao e o mesmo prompt enviado de fato ao Gemini em julgar_transacao_llm()
+    (esse tem system_prompt + user_prompt mais elaborados) — este e o preview
+    mostrado ao analista na UI (Streamlit) e no campo `prompt_llm` da API,
+    antes do julgamento real acontecer.
+    """
+    return f"""
+Voce e um especialista em compliance de ativos digitais e regulacao BCB.
+Analise a seguinte transacao de stablecoin e determine se e suspeita:
+
+TRANSACAO:
+- User ID: {transacao.get('user_id', 'N/A')}
+- Valor: R$ {transacao.get('valor_brl', 0):,.2f}
+- Frequencia hoje: {transacao.get('n_transacoes_dia', 1)} transacoes
+- Entropia de Wallets: {transacao.get('entropia_wallets', 0):.2f} (Alta = Smurfing suspeito)
+- Score ML (Isolation Forest): {transacao.get('c2_score_anomalia', 0)}/100
+- Flags BCB ativas: {transacao.get('c1_razoes', 'nenhuma')}
+- IRF (Indice de Risco Fiscal no dia): {transacao.get('irf_contexto', 50)}/100
+
+Com base nas Resolucoes BCB 519-521/2026, essa transacao representa
+risco de evasao de divisas ou lavagem de dinheiro?
+
+Responda com: SUSPEITA / NORMAL / REQUER_INVESTIGACAO e justifique em 2 linhas.
+""".strip()
+
+
 def julgar_transacao_llm(transacao: dict) -> str:
     """
     Envia a transação para o LLM atuar como juiz e gerar o COAF.

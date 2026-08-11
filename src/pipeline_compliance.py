@@ -301,26 +301,9 @@ def executar_camada3_llm(df_cinza: pd.DataFrame) -> pd.DataFrame:
     logger.info(f"[C3] LLM-as-judge concluido. Vereditos: {df_cinza['c3_veredito'].value_counts().to_dict()}")
     return df_cinza
 
-def preparar_prompt_llm(transacao: pd.Series) -> str:
-    """Gera o prompt para o LLM-as-judge avaliar casos 'cinza'."""
-    return f"""
-Voce e um especialista em compliance de ativos digitais e regulacao BCB.
-Analise a seguinte transacao de stablecoin e determine se e suspeita:
-
-TRANSACAO:
-- User ID: {transacao.get('user_id', 'N/A')}
-- Valor: R$ {transacao.get('valor_brl', 0):,.2f}
-- Frequencia hoje: {transacao.get('n_transacoes_dia', 1)} transacoes
-- Entropia de Wallets: {transacao.get('entropia_wallets', 0):.2f} (Alta = Smurfing suspeito)
-- Score ML (Isolation Forest): {transacao.get('c2_score_anomalia', 0)}/100
-- Flags BCB ativas: {transacao.get('c1_razoes', 'nenhuma')}
-- IRF (Indice de Risco Fiscal no dia): {transacao.get('irf_contexto', 50)}/100
-
-Com base nas Resolucoes BCB 519-521/2026, essa transacao representa
-risco de evasao de divisas ou lavagem de dinheiro?
-
-Responda com: SUSPEITA / NORMAL / REQUER_INVESTIGACAO e justifique em 2 linhas.
-""".strip()
+# preparar_prompt_llm() mora em agente_rag.py — e logica de prompt de LLM,
+# co-localizada com o resto da logica de LLM/RAG (julgar_transacao_llm,
+# recuperar_contexto_copom), nao mais duplicada/definida aqui.
 
 def gerar_explicacao_xai(row) -> str:
     """Gera uma explicação em linguagem natural para justificar o alerta."""
@@ -381,6 +364,7 @@ def executar_pipeline(df_tx: pd.DataFrame, df_irf: pd.DataFrame) -> pd.DataFrame
     # (com fallback heuristico se LLM desabilitado ou API indisponivel)
     mask_cinza = df_c2["c2_classificacao"] == "cinza"
     if mask_cinza.any():
+        from agente_rag import preparar_prompt_llm
         df_c2.loc[mask_cinza, "c3_prompt_llm"] = df_c2[mask_cinza].apply(
             preparar_prompt_llm, axis=1
         )

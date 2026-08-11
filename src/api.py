@@ -250,8 +250,9 @@ def score_transacao(tx: TransacaoInput):
 
     from pipeline_compliance import (
         normalizar_score_anomalia, carregar_calibracao_score,
-        gerar_explicacao_xai, preparar_prompt_llm, LIMITE_BCB_BRL,
+        gerar_explicacao_xai, LIMITE_BCB_BRL,
     )
+    from agente_rag import preparar_prompt_llm
 
     features_scaled = _scaler.transform(features)
     score_bruto = _modelo.score_samples(features_scaled)[0]

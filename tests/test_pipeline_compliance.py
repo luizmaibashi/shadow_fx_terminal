@@ -19,9 +19,10 @@ from pipeline_compliance import (
     engenharia_features,
     inferir_score,
     gerar_explicacao_xai,
-    preparar_prompt_llm,
     LIMITE_BCB_BRL,
 )
+# preparar_prompt_llm mora em agente_rag.py (logica de prompt/LLM co-localizada)
+from agente_rag import preparar_prompt_llm
 
 
 # ── Fixtures ────────────────────────────────────────────────────────
