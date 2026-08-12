@@ -163,6 +163,20 @@ with st.sidebar:
     st.caption("Resoluções BCB 519-521/2026")
     st.caption("Britto, P.J. (2026) — OTC Research")
 
+    st.markdown("---")
+    with st.expander("📖 Como navegar neste demo"):
+        st.markdown("""
+**🏠 Dashboard** — visão geral: IRF do dia, quantas transações caíram em cada alerta (VERDE/AMARELO/VERMELHO) e o histórico do índice.
+
+**⚖️ Compliance Scanner** — simulador: preenche os dados de uma transação e vê o score gerado na hora, com explicação e rascunho de RAS.
+
+**📈 Análise IRF** — decompõe o índice nos 3 sinais que o formam (câmbio, USDT, atas do Copom).
+
+**ℹ️ Sobre o Projeto** — a origem, o pivô e as limitações honestas, em texto corrido.
+
+⚠️ Este demo público roda só o dashboard, isolado (sem a API FastAPI, sem a Camada 3/LLM ativa). Transações são simuladas; o contexto macroeconômico é dado real.
+        """)
+
 
 # ── Dados ─────────────────────────────────────────────────────────────
 
@@ -212,6 +226,14 @@ if "Dashboard" in pagina:
         st.error("⚠️ Dados não encontrados. Execute o pipeline completo antes de abrir o dashboard.")
         st.code("python src/coletar_dados.py\npython src/gerar_dados_mock.py\npython src/scraper_copom.py\npython src/gerador_transacoes_mock.py\npython src/pipeline_compliance.py")
         st.stop()
+
+    st.info(
+        "**Como ler esta página:** o IRF (primeiro card) resume o risco fiscal do dia — "
+        "quanto mais alto, mais \"esperado\" é que brasileiros comprem USDT como proteção. "
+        "As transações simuladas foram classificadas em 3 baldes pelo motor de compliance: "
+        "🟢 VERDE (normal), 🟡 AMARELO (monitorar) e 🔴 VERMELHO (ação imediata, tabela abaixo). "
+        "No gráfico, áreas vermelhas marcam dias de risco alto (IRF ≥ 70)."
+    )
 
     # ── KPIs ──────────────────────────────────────────────────────────
     irf_atual = df_irf["irf"].iloc[-1]
@@ -315,6 +337,16 @@ elif "Compliance Scanner" in pagina:
     """, unsafe_allow_html=True)
 
     irf_hoje = float(df_irf["irf"].iloc[-1]) if df_irf is not None else 50.0
+
+    st.info(
+        "**Como usar:** preencha os campos como se fosse uma transação real e clique em "
+        "Analisar. O score (0-100) combina valor, horário, número de wallets e o IRF do dia — "
+        "quanto maior, mais suspeita. Depois do resultado, o motor explica em texto (XAI) por "
+        "que decidiu aquilo e, se o alerta for AMARELO ou VERMELHO, gera um rascunho de "
+        "relatório pro COAF. **Nota de transparência:** o score aqui é uma versão simplificada "
+        "e determinística, calculada na hora, sem depender de servidor — o motor completo "
+        "(Isolation Forest treinado) roda no pipeline batch, não neste formulário."
+    )
 
     with st.form("form_transacao"):
         st.markdown("**Dados da Transação**")
@@ -429,6 +461,13 @@ elif "Análise IRF" in pagina:
         st.error("Dados do IRF não encontrados.")
         st.stop()
 
+    st.info(
+        "**Como ler:** o IRF composto (gráfico do topo) é a soma ponderada dos 3 sinais abaixo — "
+        "câmbio (40%), volume de USDT (35%) e tom das atas do Copom (25%). Use o seletor de ano "
+        "pra focar num período; a tabela ao final resume o IRF médio por semestre, útil pra "
+        "comparar momentos de estresse cambial (ex: 2024-S2, quando o Real bateu R$ 6,30)."
+    )
+
     # Filtro de período
     anos = sorted(df_irf.index.year.unique())
     ano_sel = st.select_slider("Selecionar Ano", options=anos, value=(anos[0], anos[-1]))
@@ -526,9 +565,20 @@ elif "Sobre" in pagina:
     | 4 | FastAPI + Streamlit + Testes | ✅ |
     | 5 | Agente RAG (LLM lendo Atas do Copom) | ✅ |
 
+    ## ⚖️ Limitações honestas
+    - As transações processadas são **simuladas** — nenhuma validação usa dado real de cliente
+      (o contexto macroeconômico que alimenta o IRF, esse sim, é 100% real).
+    - O IRF melhora precisão e recall do motor, mas também **aumenta o falso positivo** no
+      poupador legítimo — entre 2,3x e 3,5x, oscilando conforme a rodada de correção de bug.
+      Não é uma solução sem custo, é um trade-off medido e aceito conscientemente.
+    - Este demo público roda isolado: sem a API FastAPI (o dashboard chama a lógica de
+      compliance direto, sem servidor) e sem a Camada 3 (LLM-as-judge) ativa.
+
     ## 🔗 Referências
     - Britto, P.J. (2026). *Dolarização Informal: Stablecoins como resposta à instabilidade monetária brasileira*. OTC Research.
     - Banco Central do Brasil. Resoluções BCB nº 519, 520 e 521 (2026).
     - Stanford CS230 — *Cascaded Heuristic Filters & LLM-as-judge patterns*.
     - Liu, F.T. et al. (2008). *Isolation Forest*. IEEE ICDM.
+
+    Metodologia completa, ADRs e teste de falsificação da tese: [repositório no GitHub](https://github.com/luizmaibashi/shadow_fx_terminal).
     """)
