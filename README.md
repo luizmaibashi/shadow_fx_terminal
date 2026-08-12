@@ -18,6 +18,21 @@ Quer entender o raciocínio de negócio primeiro? Vá pro [PROBLEM.md](PROBLEM.m
 
 ---
 
+## Demo ao vivo
+
+**[shadowfxterminal-uyhdgpbfkhnhjdvobjajog.streamlit.app](https://shadowfxterminal-uyhdgpbfkhnhjdvobjajog.streamlit.app/)**
+
+Escopo do demo público — leia antes de testar, pra não achar que é mais (ou menos) do que é:
+
+- Só o dashboard (`app.py`). A API FastAPI não sobe junto — o dashboard chama a lógica de compliance direto em processo, nunca via HTTP.
+- Camada 3 (LLM-as-judge) desativada — sem `GEMINI_API_KEY` configurada, pra não gerar custo em cima de tráfego público. O fallback gracioso já documentado entra no lugar.
+- Transações processadas são **simuladas** (dataset sintético); o contexto macroeconômico (câmbio, IPCA, Selic, atas do Copom) que alimenta o IRF é **100% real**. Ver seção "Transparência de dado" abaixo.
+- Cada página do app tem um bloco "Como ler/usar" explicando a métrica específica dela, e a barra lateral tem um guia de navegação.
+
+Código-fonte do demo (snapshot isolado, não afeta o pipeline principal): [`deploy/hf_space/`](deploy/hf_space/).
+
+---
+
 ## Reprodução rápida (uns 5 minutos)
 
 ```bash
