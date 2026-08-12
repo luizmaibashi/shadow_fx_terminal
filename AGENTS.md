@@ -20,6 +20,7 @@ Atualizado em 2026-08-11 via `/grill-with-docs` (Blind Spot Pass + sabatina), de
 - `tests/` — testes unitários, 3 arquivos
 - `models/` — artefatos treinados (`isolation_forest_v1.joblib`, `scaler_v1.joblib`, `score_calibracao_v1.joblib`)
 - `data/` — dado bruto e processado, não versionado
+- `deploy/hf_space/` — pacote isolado do demo público (Streamlit Community Cloud, ver README § Demo ao vivo). Cópia própria de `app.py` + subconjunto de `src/` + snapshot congelado de `data/processed`/`models` (única exceção deliberada à política de "dado não versionado" — dado público, sem PII, ~10MB). Sincronizado manualmente com a raiz a cada mudança de UI, não é gerado automaticamente
 
 ---
 

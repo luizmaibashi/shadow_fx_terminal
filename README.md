@@ -210,13 +210,16 @@ shadow_fx_terminal/
 ├── src/                          ← código de produção
 │   ├── utils.py                  ← núcleo: IRF v1/v2, correlações, carregamento de dado
 │   ├── coletar_dados.py          ← coleta v1: câmbio BRL/USD (yfinance)
+│   ├── coletar_foxbit.py         ← coleta do experimento Foxbit-BR
 │   ├── coletar_google_trends_br.py
 │   ├── analise_correlacao.py     ← script executável da cadeia de 5 evidências
+│   ├── comparar_correlacao_br.py ← compara correlação Foxbit-BR vs volume global
 │   ├── validacao_estatistica.py
 │   ├── validacao_atribuicao_geografica.py
 │   ├── recalcular_irf.py
 │   ├── scraper_copom.py
 │   ├── gerador_transacoes_mock.py
+│   ├── treinar_modelo.py         ← treina o Isolation Forest (Notebook 03)
 │   ├── pipeline_compliance.py    ← motor AML: 3 camadas em cascata
 │   ├── api.py                    ← backend FastAPI
 │   └── agente_rag.py             ← fase 5: Gemini 2.5 Flash + RAG das atas
@@ -224,8 +227,12 @@ shadow_fx_terminal/
 ├── tools/                        ← scripts de geração de asset (screenshot, PDF) — fora do pipeline
 │
 ├── notebooks/
+│   ├── 01_analise_correlacao.ipynb
 │   ├── 02_indice_risco_fiscal.ipynb
 │   └── 03_motor_compliance.ipynb
+│
+├── deploy/
+│   └── hf_space/               ← pacote isolado do demo público (ver README § Demo ao vivo)
 │
 ├── data/
 │   ├── raw/                      ← não versionado, ver .gitignore
