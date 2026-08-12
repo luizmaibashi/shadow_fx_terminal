@@ -20,7 +20,7 @@ Atualizado em 2026-08-11 via `/grill-with-docs` (Blind Spot Pass + sabatina), de
 - `tests/` — testes unitários, 3 arquivos
 - `models/` — artefatos treinados (`isolation_forest_v1.joblib`, `scaler_v1.joblib`, `score_calibracao_v1.joblib`)
 - `data/` — dado bruto e processado, não versionado
-- `deploy/hf_space/` — pacote isolado do demo público (Streamlit Community Cloud, ver README § Demo ao vivo). Cópia própria de `app.py` + subconjunto de `src/` + snapshot congelado de `data/processed`/`models` (única exceção deliberada à política de "dado não versionado" — dado público, sem PII, ~10MB). Sincronizado manualmente com a raiz a cada mudança de UI, não é gerado automaticamente
+- `deploy/hf_space/` — pacote isolado do demo público (Streamlit Community Cloud, ver README § Demo ao vivo). Cópia própria de `app.py` + subconjunto de `src/` + snapshot congelado de `data/processed`/`models` (única exceção deliberada à política de "dado não versionado" — dado público, sem PII, ~10MB). Sincronizado manualmente com a raiz a cada mudança de UI, não é gerado automaticamente. Tem seu próprio `.gitattributes` (git-lfs, usado só pelo push pro Hugging Face) — **nunca rodar `git add .`/`git add -A` na raiz do projeto**: como o `.gitattributes` mais próximo do arquivo sempre vence na resolução de atributos do git, isso converteria `deploy/hf_space/models/*.joblib` em ponteiro LFS de ~130 bytes dentro do histórico do GitHub, corrompendo o binário real. Sempre adicionar arquivo por nome explícito
 
 ---
 
