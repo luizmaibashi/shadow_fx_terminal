@@ -283,6 +283,14 @@ class TestCorrelacaoParcial:
 from utils import carregar_dataset_mestre
 
 
+_DADOS_BRUTOS_AUSENTES = not (DATA_RAW / "cambio_brl_usd.csv").exists()
+_MOTIVO_SKIP = (
+    "data/raw/*.csv nao versionado (protecao de IP, ver README) e nao "
+    "gerado no CI - roda so em ambiente com coleta local previa."
+)
+
+
+@pytest.mark.skipif(_DADOS_BRUTOS_AUSENTES, reason=_MOTIVO_SKIP)
 class TestDatasetMestre:
     """Testes de integracao para o dataset mestre unificado."""
 

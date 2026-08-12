@@ -14,7 +14,7 @@ Quer entender o raciocínio de negócio primeiro? Vá pro [PROBLEM.md](PROBLEM.m
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-2E6F68)
-![Testes](https://img.shields.io/badge/testes-60%20passing-2E6F68)
+![Testes](https://img.shields.io/badge/testes-55%20unit%20%2B%205%20integra%C3%A7%C3%A3o-2E6F68)
 
 ---
 
@@ -45,6 +45,7 @@ streamlit run app.py                      # http://localhost:8501
 
 # 6. Rode os testes
 pytest tests/ -v --cov=src                # 60 testes + coverage
+                                           # (5 de integracao pulam sem data/raw/*.csv local)
 ```
 
 Os `.csv` não são versionados (segurança de IP) — os scripts regeneram tudo do zero. O modelo treinado (`models/`) também não vai pro git.
@@ -271,6 +272,7 @@ python src/pipeline_compliance.py       # 3 camadas → resultado_compliance.csv
 
 # 6. rodar os testes
 python -m pytest tests/ -v              # 60 testes, 3 arquivos
+                                         # (TestDatasetMestre, 5 testes, pula sem data/raw/ local - e o que roda no CI)
 ```
 
 ---

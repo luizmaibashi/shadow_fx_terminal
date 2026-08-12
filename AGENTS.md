@@ -60,7 +60,7 @@ Atualizado em 2026-08-11 via `/grill-with-docs` (Blind Spot Pass + sabatina), de
 - `IRF_LAG_DAYS=14` é obrigatório pra evitar vazamento de dado macro (IPCA/Selic/dívida-PIB são publicados com semanas de atraso; usar o IRF do dia exato da transação vazaria informação do futuro).
 - `LLM_JUDGE_ENABLED=false` por padrão — ativa via `.env` com `GEMINI_API_KEY`.
 - Docker roda non-root (`USER appuser`).
-- Testes: `pytest tests/ -v` — 3 arquivos (`test_utils.py`, `test_pipeline_compliance.py`, `test_agente_rag.py`).
+- Testes: `pytest tests/ -v` — 3 arquivos (`test_utils.py`, `test_pipeline_compliance.py`, `test_agente_rag.py`). 60 no total, mas `TestDatasetMestre` (5, integração) pula via `skipif` quando `data/raw/*.csv` não existe — é o caso do CI, que roda 55.
 - Log em `pipeline.log`, não versionado.
 - Normalização do score do Isolation Forest é calibrada empiricamente (p1/p99) no treino e salva em `models/score_calibracao_v1.joblib` — nunca hardcodear range fixo (`carregar_calibracao_score()`/`normalizar_score_anomalia()` em `pipeline_compliance.py` são a fonte única, usada tanto no pipeline batch quanto na API).
 
