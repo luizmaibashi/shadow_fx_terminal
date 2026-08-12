@@ -103,7 +103,7 @@ Herdado do `TESE.md`: a tese (e o projeto) falha se, medido contra o rótulo de 
 3. `starlette` preso em 1.3.1, com várias vulnerabilidades altas/médias apontadas pelo Dependabot. Não dá pra atualizar pra 1.6.0 porque `streamlit<1.4.0,>=0.46.0` exige essa faixa. Só resolve atualizando o Streamlit pra uma versão que aceite `starlette` mais novo, ou trocando o dashboard de framework — nenhuma das duas é trivial. Registrado, não corrigido.
 4. Resíduo de vulnerabilidade no stack Jupyter (`jupyterlab`, `notebook`, `tornado`, `mistune`, usados só pelos 3 notebooks CRISP-DM, não em produção) — sem fix publicado ainda na maioria dos casos (`pip list --outdated` não aponta versão nova disponível). Superfície de risco baixa porque não roda em produção/API, mas fica registrado.
 
-Nenhum outro débito técnico aberto no momento — os 4 que restavam (CI/CD, timestamp malformado, `preparar_prompt_llm` arquitetural, thresholds do IRF v2) foram corrigidos em 2026-08-11 (ver abaixo). Só a conversa real do ticket 0005 do Wayfinder (`docs/wayfinder/tese-veredito-condicoes/`) segue pendente — é ação humana, fora do escopo de código.
+Nenhum outro débito técnico aberto no momento — os 4 que restavam (CI/CD, timestamp malformado, `preparar_prompt_llm` arquitetural, thresholds do IRF v2) foram corrigidos em 2026-08-11 (ver abaixo).
 
 ### Auditoria de dependência — 2026-08-11
 

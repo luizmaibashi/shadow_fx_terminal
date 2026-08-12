@@ -115,7 +115,7 @@ O argumento que sobreviveu ao teste é a complexidade regulatória brasileira di
 - Nenhuma evidência pública de Chainalysis, TRM Labs ou Elliptic tratando o Brasil como mercado prioritário — sem expansão anunciada, sem feature específica pra resolução do BCB encontrada em busca dedicada.
 - Volume real que sustenta a demanda: R$ 388 bilhões declarados em criptoativo por brasileiro em 9 meses de 2025, mais de 70% em stablecoin. Fonte: Blue Consult.
 
-A ressalva que fica, com honestidade: essa tese é bem fundamentada em fato público, não é opinião solta — mas continua sendo raciocínio, não validação de mercado. O teste que faltaria pra virar validação — alguém de uma exchange brasileira confirmando que ainda não resolveu isso sozinho, ou que valorizaria essa especificidade — ainda não foi feito. Ver `docs/tese/shadow-fx-vantagem-competitiva/TESE.md` (veredito completo) e `docs/wayfinder/tese-veredito-condicoes/0005-roteiro-distribuicao-real.md` (roteiro da conversa pendente).
+A ressalva que fica, com honestidade: essa tese é bem fundamentada em fato público, não é opinião solta — mas continua sendo raciocínio, não validação de mercado. O teste que faltaria pra virar validação — alguém de uma exchange brasileira confirmando que ainda não resolveu isso sozinho, ou que valorizaria essa especificidade — ainda não foi feito. Ver `docs/tese/shadow-fx-vantagem-competitiva/TESE.md` (veredito completo).
 
 ---
 
