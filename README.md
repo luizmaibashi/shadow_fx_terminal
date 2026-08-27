@@ -12,6 +12,7 @@ Pipeline de análise econométrica e compliance AML para stablecoins no Brasil. 
 
 Quer entender o raciocínio de negócio primeiro? Vá pro [PROBLEM.md](PROBLEM.md). Quer o mergulho técnico de "por quê" cada decisão de engenharia foi tomada? Vá pro [docs/WALKTHROUGH_TECNICO.md](docs/WALKTHROUGH_TECNICO.md).
 
+[![CI](https://github.com/luizmaibashi/shadow_fx_terminal/actions/workflows/ci.yml/badge.svg)](https://github.com/luizmaibashi/shadow_fx_terminal/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-2E6F68)
 ![Testes](https://img.shields.io/badge/testes-55%20no%20CI%20%2B%209%20locais-2E6F68)
