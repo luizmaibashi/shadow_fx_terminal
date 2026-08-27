@@ -141,6 +141,12 @@ Motivação: a paleta anterior (neon cyan/violeta, texto em gradiente, cards com
 - Novo teste: `tests/test_app_smoke.py` — roda as 4 páginas do dashboard via `streamlit.testing.v1.AppTest` (sem browser) e falha se qualquer uma levantar exceção. Pula sem `data/processed/`+`models/` locais, mesmo padrão do `TestDatasetMestre`.
 - **Screenshots do README/reports/ ficaram desatualizados** (mostram a paleta antiga) — pendente recapturar, ver débito registrado no Context Bridge.
 
+### O job docker-build (recém-criado) pegou um bug real no primeiro push — 2026-08-27
+
+`software-properties-common` no `Dockerfile` quebrava o build: o pacote não existe mais no repositório "trixie" que `python:3.13-slim` passou a resolver, e não era usado por nenhum script do projeto (sem `add-apt-repository` em lugar nenhum) — dead weight herdado de algum template, nunca detectado porque o CI nunca tinha buildado a imagem antes. Removido. Confirma o valor do gate: existia desde antes desta sessão, só ficou visível quando o job de build passou a existir.
+
+Revisão adicional da página do repositório no GitHub (a pedido do Luiz, "veja se está tudo certo"): description/topics/homepage estavam vazios (sem subtítulo, sem tag de descoberta, sem link pro demo em destaque) — preenchidos. Badge de status do CI adicionado ao README (não existia).
+
 ---
 
 ## Artefatos de raciocínio (não é código, mas é parte do produto)
