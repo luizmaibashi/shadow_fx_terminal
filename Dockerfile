@@ -10,10 +10,12 @@ ENV PYTHONPATH=/app/src:/app
 WORKDIR /app
 
 # Install system dependencies
+# software-properties-common removido (2026-08-27): nao usado por nenhum script do
+# projeto (sem add-apt-repository em lugar nenhum) e o pacote nao existe mais no
+# repositorio "trixie" que python:3.13-slim passou a resolver, quebrando o build.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
-    software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
