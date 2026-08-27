@@ -4,6 +4,6 @@ numpy
 scipy
 scikit-learn
 joblib
-matplotlib
+plotly
 python-dotenv
 google-genai
