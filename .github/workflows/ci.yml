@@ -54,3 +54,12 @@ jobs:
         with:
           file: ./coverage.xml
           fail_ci_if_error: false
+
+  docker-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t shadow-fx-terminal:ci .

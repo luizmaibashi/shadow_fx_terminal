@@ -14,7 +14,7 @@ Quer entender o raciocínio de negócio primeiro? Vá pro [PROBLEM.md](PROBLEM.m
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-2E6F68)
-![Testes](https://img.shields.io/badge/testes-55%20unit%20%2B%205%20integra%C3%A7%C3%A3o-2E6F68)
+![Testes](https://img.shields.io/badge/testes-55%20no%20CI%20%2B%209%20locais-2E6F68)
 
 ---
 
@@ -59,8 +59,9 @@ python src/pipeline_compliance.py         # classifica em VERDE/AMARELO/VERMELHO
 streamlit run app.py                      # http://localhost:8501
 
 # 6. Rode os testes
-pytest tests/ -v --cov=src                # 60 testes + coverage
-                                           # (5 de integracao pulam sem data/raw/*.csv local)
+pytest tests/ -v --cov=src                # 64 testes + coverage
+                                           # (9 pulam sem data/ e models/ locais: 5 de integracao
+                                           #  + 4 de smoke do dashboard, ver tests/test_app_smoke.py)
 ```
 
 Os `.csv` não são versionados (segurança de IP) — os scripts regeneram tudo do zero. O modelo treinado (`models/`) também não vai pro git.
@@ -250,7 +251,8 @@ shadow_fx_terminal/
 ├── tests/
 │   ├── test_utils.py              ← 33 testes
 │   ├── test_pipeline_compliance.py ← 22 testes
-│   └── test_agente_rag.py          ← 5 testes (60 no total)
+│   ├── test_agente_rag.py          ← 5 testes
+│   └── test_app_smoke.py           ← 4 testes (dashboard, 64 no total)
 │
 └── reports/                      ← visualizações geradas
 ```
@@ -293,8 +295,9 @@ python src/gerador_transacoes_mock.py   # gera 4.509 transações (3 perfis)
 python src/pipeline_compliance.py       # 3 camadas → resultado_compliance.csv
 
 # 6. rodar os testes
-python -m pytest tests/ -v              # 60 testes, 3 arquivos
-                                         # (TestDatasetMestre, 5 testes, pula sem data/raw/ local - e o que roda no CI)
+python -m pytest tests/ -v              # 64 testes, 4 arquivos
+                                         # (9 pulam sem data/raw/, data/processed/ e models/ locais —
+                                         #  55 rodam no CI, que não gera esses artefatos)
 ```
 
 ---
@@ -424,6 +427,8 @@ A fase 4 materializa o motor de compliance numa interface visual, com backend e 
 3. **Análise IRF** — decompõe o índice nos 3 fatores (câmbio 40%, supply de USDT 35%, atas do Copom 25%) pra a mesa de operações entender por que o risco está alto naquele dia.
 4. **Sobre o projeto** — conta o pivô da análise pro produto, e documenta as resoluções do BCB aplicáveis.
 
+> **Nota:** os prints abaixo são da paleta anterior (redesign de 2026-08-27 trocou pra tema de terminal financeiro — ver `AGENTS.md` § Redesign da UI). Pendente recapturar.
+
 | Compliance Scanner — caso VERDE | Compliance Scanner — caso VERMELHO, rascunho COAF |
 |---|---|
 | ![Score de compliance 21.2, alerta VERDE, sem flags da Camada 1](reports/streamlit_scanner_green.png) | ![Rascunho de Relatório de Atividade Suspeita gerado automaticamente](reports/streamlit_scanner_red_coaf.png) |
@@ -459,15 +464,15 @@ uvicorn src.api:app --reload --port 8000
 
 ### Deploy e produtização
 
-O Docker atual (não-root, healthcheck, `docker-compose` com 3 serviços) é sólido pra rodar local ou demonstrar o projeto — mas apontar um domínio real nele hoje expõe 5 lacunas concretas, levantadas em auditoria de 2026-08-11:
+O Docker atual (não-root, healthcheck, `docker-compose` com 3 serviços) é sólido pra rodar local ou demonstrar o projeto. Auditoria de 2026-08-11 levantou 5 lacunas pra apontar um domínio real nele; 3 foram corrigidas em 2026-08-27, 2 seguem como débito registrado:
 
-1. **Auth falha aberta.** Se `API_KEY_INTERNA` não estiver setada, `src/api.py` só loga um warning e deixa os endpoints protegidos passarem sem chave — devia recusar subir sem a variável, não abrir a porta.
-2. **CORS hardcoded pra `localhost:8501`** (`src/api.py`). Fora do compose local, o dashboard para de falar com a API até alguém editar o código-fonte e rebuildar. Precisa vir de variável de ambiente (`CORS_ORIGINS`).
-3. **`docker-compose up --build` sozinho não funciona na primeira vez.** `data/` e `models/` chegam vazios (só `.gitkeep`) num clone novo — é preciso rodar `docker-compose run setup` antes, e isso não está automatizado nem documentado no fluxo padrão.
-4. **CI não builda a imagem Docker.** `.github/workflows/ci.yml` roda lint e teste, mas nada garante que o `Dockerfile` continua buildando depois de uma mudança de dependência — só se descobre quebrado no deploy.
-5. **Débitos já registrados em `AGENTS.md` que pesam pra escala real**: sem banco (CSV + joblib em memória, perde tudo a cada restart), processamento síncrono, `starlette` preso numa versão vulnerável por causa do range do Streamlit.
+1. ~~**Auth falha aberta.**~~ **Corrigido.** `src/api.py` agora recusa subir sem `API_KEY_INTERNA` (fail-closed) — só abre sem chave se `API_AUTH_OPCIONAL=true` for setado explicitamente, pra ambiente de dev isolado.
+2. ~~**CORS hardcoded pra `localhost:8501`.**~~ **Corrigido.** Vem de `CORS_ORIGINS` (lista separada por vírgula), default mantém o comportamento antigo se a variável não for setada.
+3. ~~**`docker-compose up --build` sozinho não funciona na primeira vez.**~~ **Corrigido.** `entrypoint.sh` detecta `data/`/`models/` vazios e roda o setup automaticamente antes de subir o serviço — `docker-compose run setup` continua disponível só pra forçar regeneração manual depois.
+4. ~~**CI não builda a imagem Docker.**~~ **Corrigido.** `.github/workflows/ci.yml` tem job `docker-build` que builda a imagem a cada push/PR.
+5. **Débitos já registrados em `AGENTS.md` que pesam pra escala real**: sem banco (CSV + joblib em memória, perde tudo a cada restart), processamento síncrono, `starlette` preso numa versão vulnerável por causa do range do Streamlit. Decisão de escopo consciente (ADR-0006), não corrigido — não é bug, é fronteira de portfólio vs. produto real.
 
-Nenhum item é grande isoladamente, mas juntos são a diferença entre "roda no meu Docker" e "aguenta tráfego real" — registrados aqui, não corrigidos ainda.
+Item 5 é a diferença entre "roda no meu Docker" e "aguenta tráfego real" — decisão de escopo explícita, não descuido.
 
 ## Roadmap
 

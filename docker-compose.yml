@@ -32,6 +32,10 @@ services:
     volumes:
       - ./data:/app/data
       - ./models:/app/models
+    environment:
+      # API_KEY_INTERNA vem do .env (obrigatoria — a API recusa subir sem ela, ver src/api.py)
+      # CORS_ORIGINS: lista separada por virgula das origens permitidas (default: so o dashboard local)
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:8501}
     command: uvicorn src.api:app --host 0.0.0.0 --port 8000
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
@@ -40,7 +44,10 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # --- Setup Service: Optional tool to initialize data ---
+  # --- Setup Service: forca regenerar dado/modelo do zero ---
+  # O entrypoint de dashboard/backend ja roda esse setup sozinho na 1a
+  # execucao se data/models estiverem vazios (ver entrypoint.sh) — esse
+  # servico so e necessario pra RESETAR/regenerar manualmente depois.
   # Run with: docker-compose run setup
   setup:
     build: .

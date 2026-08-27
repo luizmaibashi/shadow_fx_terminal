@@ -61,7 +61,7 @@ Atualizado em 2026-08-11 via `/grill-with-docs` (Blind Spot Pass + sabatina), de
 - `IRF_LAG_DAYS=14` é obrigatório pra evitar vazamento de dado macro (IPCA/Selic/dívida-PIB são publicados com semanas de atraso; usar o IRF do dia exato da transação vazaria informação do futuro).
 - `LLM_JUDGE_ENABLED=false` por padrão — ativa via `.env` com `GEMINI_API_KEY`.
 - Docker roda non-root (`USER appuser`).
-- Testes: `pytest tests/ -v` — 3 arquivos (`test_utils.py`, `test_pipeline_compliance.py`, `test_agente_rag.py`). 60 no total, mas `TestDatasetMestre` (5, integração) pula via `skipif` quando `data/raw/*.csv` não existe — é o caso do CI, que roda 55.
+- Testes: `pytest tests/ -v` — 4 arquivos (`test_utils.py`, `test_pipeline_compliance.py`, `test_agente_rag.py`, `test_app_smoke.py`). 64 no total, mas 9 pulam via `skipif` quando faltam artefatos locais: `TestDatasetMestre` (5, integração) sem `data/raw/*.csv`, e `test_app_smoke.py` (4, uma por página do dashboard via `streamlit.testing.v1.AppTest`) sem `data/processed/`+`models/` — é o caso do CI, que roda 55.
 - Log em `pipeline.log`, não versionado.
 - Normalização do score do Isolation Forest é calibrada empiricamente (p1/p99) no treino e salva em `models/score_calibracao_v1.joblib` — nunca hardcodear range fixo (`carregar_calibracao_score()`/`normalizar_score_anomalia()` em `pipeline_compliance.py` são a fonte única, usada tanto no pipeline batch quanto na API).
 
@@ -120,6 +120,26 @@ O GitHub Dependabot acusou 136 vulnerabilidades (2 críticas, 66 altas) logo dep
 - `api.py`: normalização de score e prompt do LLM-as-judge duplicados e divergentes do `pipeline_compliance.py` — consolidados numa fonte única.
 - `api.py`: texto de razão do C1 (XAI) só checava 2 das 5 regras reais — agora cobre R1/R3/R4/R5; R2 documentado como não-verificável sem histórico do usuário.
 - Bug de calibração do score do Isolation Forest (range hardcoded `-0.5/0.5` não batia com a distribuição real) — corrigido com calibração empírica (p1/p99), salva como artefato.
+
+### Corrigido em 2026-08-27 (3 das 5 lacunas de deploy do README)
+
+- **Auth fail-open em `src/api.py`.** Antes: sem `API_KEY_INTERNA`, só logava warning e deixava os endpoints protegidos abertos. Agora recusa subir (`RuntimeError` no import) — só abre sem chave se `API_AUTH_OPCIONAL=true` for setado explicitamente (dev local isolado). Confirmado com teste manual (import sem a env var levanta o erro).
+- **CORS hardcoded pra `localhost:8501`.** Agora lê `CORS_ORIGINS` (lista separada por vírgula), com o mesmo default de antes se a variável não for setada — não quebra o fluxo local existente.
+- **`docker-compose up --build` não funcionava sozinho na primeira vez.** `entrypoint.sh` novo detecta `data/`/`models/` vazios e roda o pipeline de setup automaticamente antes de subir o serviço (serializado via `depends_on: backend: condition: service_healthy` — só o backend roda o setup, o dashboard já encontra os dados prontos). `docker-compose run setup` continua existindo, agora só pra forçar regeneração manual.
+- Item 4 (CI não builda a imagem Docker) também corrigido — job `docker-build` novo em `.github/workflows/ci.yml`.
+- Os 2 itens que restam (sem banco/dado em memória, `starlette` preso) já eram decisão de escopo documentada (ADR-0006) ou gate estrutural registrado na base — não é trabalho pendente, é fronteira assumida.
+- 60/60 testes confirmados depois da mudança de deploy (nenhum teste importa `api.py` diretamente, então o fail-closed não quebrou CI). Contagem subiu pra 64 depois, com `test_app_smoke.py` (ver seção de UI abaixo).
+
+### Redesign da UI do dashboard — 2026-08-27
+
+Motivação: a paleta anterior (neon cyan/violeta, texto em gradiente, cards com glow no hover) lia como demo de hackathon de IA, não como ferramenta de compliance — problema real quando o público-alvo passa a incluir empresa séria do setor (KYC/AML), não só recrutador de portfólio.
+
+- **Paleta trocada pela paleta de status validada da skill `dataviz`** (`references/palette.md`): verde/amarelo/vermelho agora vêm de `good`/`warning`/`critical` (hex `#0ca30c`/`#fab219`/`#d03b3b`), validados por `scripts/validate_palette.js` contra contraste e separação de daltonismo — não escolhidos no olho. Fundo, cards e tipografia seguem os tokens de "Chart chrome & ink" do mesmo arquivo.
+- **Gráficos matplotlib estáticos (`st.pyplot`) trocados por Plotly interativo** (`st.plotly_chart`, hover com tooltip) — os 3 gráficos do dashboard (IRF histórico, decomposição de 4 sinais, respectivo fallback). A decomposição usa cores categóricas de identidade (azul/laranja/aqua/violeta), nunca as cores de status — regra da skill `dataviz`: status é reservado, nunca reusado como "série 4".
+- **Removidos**: emoji decorativo em cabeçalho/título de seção (ficou só onde é sinal funcional, ex. dentro do badge de alerta), gradiente de texto no `<h1>`, hover-glow nos KPI cards, border-radius grande (16px→6px).
+- Nova dependência: `plotly` (`requirements.txt` + `requirements-lock.txt==6.7.0`).
+- Novo teste: `tests/test_app_smoke.py` — roda as 4 páginas do dashboard via `streamlit.testing.v1.AppTest` (sem browser) e falha se qualquer uma levantar exceção. Pula sem `data/processed/`+`models/` locais, mesmo padrão do `TestDatasetMestre`.
+- **Screenshots do README/reports/ ficaram desatualizados** (mostram a paleta antiga) — pendente recapturar, ver débito registrado no Context Bridge.
 
 ---
 
