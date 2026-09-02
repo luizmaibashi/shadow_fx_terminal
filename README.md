@@ -1,11 +1,11 @@
 # Shadow FX Terminal
 
-Pipeline de análise econométrica e compliance AML para stablecoins no Brasil. Começou como uma pergunta de estatística — o brasileiro compra USDT pra especular ou pra se proteger do câmbio? — e virou um motor de detecção de anomalias que usa essa resposta como contexto.
+Pipeline de análise econométrica e compliance AML para stablecoins no Brasil. Começou como uma pergunta de estatística: o brasileiro compra USDT pra especular ou pra se proteger do câmbio? Virou um motor de detecção de anomalias que usa essa resposta como contexto.
 
 **Autor:** Luiz Maibashi
 
 **Referências principais:**
-- *"Dolarização Informal: Stablecoins como resposta à instabilidade monetária brasileira"* — Paulo J. Britto (OTC Research, 2026)
+- *"Dolarização Informal: Stablecoins como resposta à instabilidade monetária brasileira"*, Paulo J. Britto (OTC Research, 2026)
 - Insights de um evento do mercado financeiro sobre segurança financeira no ecossistema digital pós-fraudes (2025)
 
 **Stack:** Python, Pandas, Scipy, Scikit-Learn, Jupyter, yfinance, python-bcb, pytrends
@@ -23,10 +23,10 @@ Quer entender o raciocínio de negócio primeiro? Vá pro [PROBLEM.md](PROBLEM.m
 
 **[shadowfxterminal-uyhdgpbfkhnhjdvobjajog.streamlit.app](https://shadowfxterminal-uyhdgpbfkhnhjdvobjajog.streamlit.app/)**
 
-Escopo do demo público — leia antes de testar, pra não achar que é mais (ou menos) do que é:
+Escopo do demo público. Leia antes de testar, pra não achar que é mais (ou menos) do que é:
 
-- Só o dashboard (`app.py`). A API FastAPI não sobe junto — o dashboard chama a lógica de compliance direto em processo, nunca via HTTP.
-- Camada 3 (LLM-as-judge) desativada — sem `GEMINI_API_KEY` configurada, pra não gerar custo em cima de tráfego público. O fallback gracioso já documentado entra no lugar.
+- Só o dashboard (`app.py`). A API FastAPI não sobe junto: o dashboard chama a lógica de compliance direto em processo, nunca via HTTP.
+- Camada 3 (LLM-as-judge) desativada, sem `GEMINI_API_KEY` configurada, pra não gerar custo em cima de tráfego público. O fallback gracioso já documentado entra no lugar.
 - Transações processadas são **simuladas** (dataset sintético); o contexto macroeconômico (câmbio, IPCA, Selic, atas do Copom) que alimenta o IRF é **100% real**. Ver seção "Transparência de dado" abaixo.
 - Cada página do app tem um bloco "Como ler/usar" explicando a métrica específica dela, e a barra lateral tem um guia de navegação.
 
@@ -65,7 +65,7 @@ pytest tests/ -v --cov=src                # 64 testes + coverage
                                            #  + 4 de smoke do dashboard, ver tests/test_app_smoke.py)
 ```
 
-Os `.csv` não são versionados (segurança de IP) — os scripts regeneram tudo do zero. O modelo treinado (`models/`) também não vai pro git.
+Os `.csv` não são versionados (segurança de IP); os scripts regeneram tudo do zero. O modelo treinado (`models/`) também não vai pro git.
 
 ---
 
@@ -73,7 +73,7 @@ Os `.csv` não são versionados (segurança de IP) — os scripts regeneram tudo
 
 O Brasil convive com uma crise silenciosa de integridade financeira. Três coisas estão acontecendo ao mesmo tempo:
 
-1. **Fraude bancária em escala industrial.** Só em 2024 o sistema registrou mais de R$ 2,5 bilhões em prejuízo com fraude via Pix — engenharia social, SIM swap, contas laranja. Hoje o golpe não usa mala de dinheiro, usa Pix e stablecoin.
+1. **Fraude bancária em escala industrial.** Só em 2024 o sistema registrou mais de R$ 2,5 bilhões em prejuízo com fraude via Pix: engenharia social, SIM swap, contas laranja. Hoje o golpe não usa mala de dinheiro, usa Pix e stablecoin.
 2. **O fenômeno das bets.** Com a regulamentação das apostas esportivas em 2024, explodiram os casos de lavagem via casa de apostas: deposita dinheiro sujo, aposta em odds garantidas entre contas próprias, saca o prêmio limpo. Stablecoin entra nesse fluxo como camada de anonimização entre o fiat e o cripto.
 3. **Evasão de divisas via stablecoin.** A desvalorização do Real empurra dois públicos opostos pro USDT: o cidadão comum que quer preservar poder de compra, e quem usa o mesmo instrumento pra mandar dinheiro pra fora sem passar pelo câmbio oficial. Um sistema de compliance que não distingue esses dois perfis não serve pra nada.
 
@@ -83,7 +83,7 @@ A pergunta central do projeto é essa: como uma corretora ou um regulador distin
 
 O ponto de partida foi o paper de Paulo J. Britto (OTC Research, 2026), que mostra estatisticamente que o brasileiro usa USDT como reserva de valor, não como especulação.
 
-O segundo empurrão veio de um evento sobre as novas fronteiras de segurança financeira no digital — Pix 24/7 como janela de fraude que não dorme, DeFi/stablecoin como camada de anonimização, IA generativa nas mãos de fraudadores, e a ideia de que um sistema de score precisa levar em conta não só o comportamento do usuário, mas o ambiente macroeconômico do momento da transação. Essa última ideia — contexto macro como feature de ML — foi o que transformou uma análise estatística em produto de compliance.
+O segundo empurrão veio de um evento sobre as novas fronteiras de segurança financeira no digital: Pix 24/7 como janela de fraude que não dorme, DeFi/stablecoin como camada de anonimização, IA generativa nas mãos de fraudadores, e a ideia de que um sistema de score precisa levar em conta não só o comportamento do usuário, mas o ambiente macroeconômico do momento da transação. Essa última ideia (contexto macro como feature de ML) foi o que transformou uma análise estatística em produto de compliance.
 
 ---
 
@@ -93,9 +93,9 @@ O projeto nasceu com um objetivo puramente analítico (projeto 1): provar, com d
 
 Enquanto construíamos o Índice de Risco Fiscal (IRF) pra validar essa correlação, apareceu um problema regulatório concreto: as Resoluções do BCB passaram a tratar USDT como câmbio, exigindo fiscalização ativa contra lavagem. E o problema com compliance baseado em regra fixa ("flag se > R$ 10.000") é que ele bloqueia o poupador assustado (falso positivo) e deixa passar o fracionador profissional (falso negativo). Nenhum dos dois é aceitável.
 
-Daí veio o projeto 2: pegar a prova estatística e injetá-la como contexto dentro de um modelo de detecção de anomalia. Isso ataca dois problemas de uma vez — valida a tese da dolarização informal via stablecoin, e entrega um motor de compliance mais preciso, com um trade-off real, medido e documentado (não uma solução mágica sem custo — ver `docs/tese/shadow-fx-vantagem-competitiva/TESE.md` e a seção de Resultados abaixo).
+Daí veio o projeto 2: pegar a prova estatística e injetá-la como contexto dentro de um modelo de detecção de anomalia. Isso ataca dois problemas de uma vez: valida a tese da dolarização informal via stablecoin, e entrega um motor de compliance mais preciso, com um trade-off real, medido e documentado (não uma solução mágica sem custo; ver `docs/tese/shadow-fx-vantagem-competitiva/TESE.md` e a seção de Resultados abaixo).
 
-A vantagem competitiva, resumida: não é "detectar melhor" que Chainalysis, TRM Labs ou Elliptic — eles têm mais dado e mais engenharia que um projeto de portfólio jamais vai ter. É especialização na complexidade regulatória brasileira, que muda rápido (~7 mudanças relevantes em ~18 meses) e que um player global genérico não tem motivo de negócio pra acompanhar de perto. Esse argumento é bem fundamentado em fato público, mas ainda não foi validado numa conversa real de mercado — a ressalva completa está em `PROBLEM.md`, seção Vantagem Competitiva.
+A vantagem competitiva, resumida: não é "detectar melhor" que Chainalysis, TRM Labs ou Elliptic. Eles têm mais dado e mais engenharia que um projeto de portfólio jamais vai ter. É especialização na complexidade regulatória brasileira, que muda rápido (~7 mudanças relevantes em ~18 meses) e que um player global genérico não tem motivo de negócio pra acompanhar de perto. Esse argumento é bem fundamentado em fato público, mas ainda não foi validado numa conversa real de mercado. A ressalva completa está em `PROBLEM.md`, seção Vantagem Competitiva.
 
 ---
 
@@ -103,9 +103,9 @@ A vantagem competitiva, resumida: não é "detectar melhor" que Chainalysis, TRM
 
 O pipeline segue o padrão de filtros em cascata (Stanford CS230), que resolve os casos óbvios nas camadas baratas e só escala pra camada cara quando precisa:
 
-1. **Camada 1 — regras BCB.** Filtros determinísticos das Resoluções 519-521/2026.
-2. **Camada 2 — IA de detecção.** Isolation Forest calibrado com o IRF v2, diferenciando hedge (compra de USDT que acompanha a desvalorização) de anomalia de descorrelação (compra massiva num dia de calmaria cambial — indício de lavagem ou evasão).
-3. **Camada 3 — LLM como juiz.** Um agente lê as atas do Copom e analisa qualitativamente os casos em zona cinza.
+1. **Camada 1: regras BCB.** Filtros determinísticos das Resoluções 519-521/2026.
+2. **Camada 2: IA de detecção.** Isolation Forest calibrado com o IRF v2, diferenciando hedge (compra de USDT que acompanha a desvalorização) de anomalia de descorrelação (compra massiva num dia de calmaria cambial, indício de lavagem ou evasão).
+3. **Camada 3: LLM como juiz.** Um agente lê as atas do Copom e analisa qualitativamente os casos em zona cinza.
 
 ---
 
@@ -120,9 +120,9 @@ Isso é uma aplicação de CRISP-DM com profundidade estatística, não só um n
 
 ---
 
-## As Resoluções BCB 519-521/2026 — por que elas são o coração do projeto
+## As Resoluções BCB 519-521/2026: por que elas são o coração do projeto
 
-Antes de 2026, stablecoin operava num vácuo regulatório no Brasil. Dava pra comprar R$ 500.000 em USDT numa corretora com menos burocracia do que abrir conta em banco — um vetor óbvio pra lavagem e evasão.
+Antes de 2026, stablecoin operava num vácuo regulatório no Brasil. Dava pra comprar R$ 500.000 em USDT numa corretora com menos burocracia do que abrir conta em banco, um vetor óbvio pra lavagem e evasão.
 
 | Resolução | O que faz | Por que importa |
 |---|---|---|
@@ -142,9 +142,9 @@ criminoso aprende o limiar e fraciona (smurfing),
 brasileiro assustado com o câmbio em R$ 6,30 é bloqueado.
 ```
 
-A ideia central do Shadow FX Terminal é simples: injetar o contexto macroeconômico como variável do modelo. Um brasileiro que compra R$ 8.000 de USDT num dia qualquer e outro que compra o mesmo valor no dia em que o Real perdeu 4% e o IRF está em 87/100 não são o mesmo evento estatístico. O primeiro é estranho; o segundo é esperado. Regra fixa não enxerga essa diferença — um modelo que sabe o estado do câmbio, a trajetória da dívida, o tom do último Copom e a busca por USDT no Brasil, enxerga.
+A ideia central do Shadow FX Terminal é simples: injetar o contexto macroeconômico como variável do modelo. Um brasileiro que compra R$ 8.000 de USDT num dia qualquer e outro que compra o mesmo valor no dia em que o Real perdeu 4% e o IRF está em 87/100 não são o mesmo evento estatístico. O primeiro é estranho; o segundo é esperado. Regra fixa não enxerga essa diferença. Um modelo que sabe o estado do câmbio, a trajetória da dívida, o tom do último Copom e a busca por USDT no Brasil, enxerga.
 
-Em termos regulatórios: o IRF melhora a precisão dos reportes ao COAF (medido: 35,9% → 44,8%) frente a um modelo sem contexto macro. Não garante zero exclusão de gente legítima — o mesmo contexto que ajuda a pegar mais fracionador também aumenta o falso positivo em poupador legítimo, entre 2,3x e 3,5x conforme a rodada de calibração (ver seção de Resultados). É uma melhora mensurável, não uma solução sem custo.
+Em termos regulatórios: o IRF melhora a precisão dos reportes ao COAF (medido: 35,9% → 44,8%) frente a um modelo sem contexto macro. Não garante zero exclusão de gente legítima: o mesmo contexto que ajuda a pegar mais fracionador também aumenta o falso positivo em poupador legítimo, entre 2,3x e 3,5x conforme a rodada de calibração (ver seção de Resultados). É uma melhora mensurável, não uma solução sem custo.
 
 ---
 
@@ -166,18 +166,18 @@ FASE 3: Motor de compliance AML
   C3: LLM como juiz (Gemini 2.5 Flash + RAG das atas) → COAF
 
 FASE 4: FastAPI (backend) + Streamlit (frontend)
-FASE 5: Agente RAG — atas do Copom como contexto injetado
+FASE 5: Agente RAG, atas do Copom como contexto injetado
 ```
 
 ---
 
 ## Nota de engenharia: como os dados evoluíram (v1 → v2)
 
-### v1 — dado sintético (decisão consciente e documentada)
+### v1: dado sintético (decisão consciente e documentada)
 
 Na primeira versão, todo provedor de dado on-chain bloqueou o histórico 2022-2025 no plano gratuito: Glassnode cobra a partir de USD 999/mês, CryptoQuant devolve 403 no tier pago, CoinGecko limita a 365 dias.
 
-Em vez de travar o projeto, gerei dado sintético mas parametrizado pelas dinâmicas descritas no paper — geração sintética com injeção de conhecimento de domínio, prática comum em MLOps quando o dado real está fora de alcance:
+Em vez de travar o projeto, gerei dado sintético mas parametrizado pelas dinâmicas descritas no paper: geração sintética com injeção de conhecimento de domínio, prática comum em MLOps quando o dado real está fora de alcance:
 
 ```python
 # a lógica do mock não é aleatória, é calibrada por evidência empírica:
@@ -186,7 +186,7 @@ Em vez de travar o projeto, gerei dado sintético mas parametrizado pelas dinâm
 # 2024-S2: correlação estrutural forte + "efeito piso" (acumulação por hedge)
 ```
 
-### v2 — dado real (estado atual)
+### v2: dado real (estado atual)
 
 | Dado | Fonte | Registros |
 |---|---|---|
@@ -226,7 +226,7 @@ shadow_fx_terminal/
 │   ├── api.py                    ← backend FastAPI
 │   └── agente_rag.py             ← fase 5: Gemini 2.5 Flash + RAG das atas
 │
-├── tools/                        ← scripts de geração de asset (screenshot, PDF) — fora do pipeline
+├── tools/                        ← scripts de geração de asset (screenshot, PDF), fora do pipeline
 │
 ├── notebooks/
 │   ├── 01_analise_correlacao.ipynb
@@ -264,11 +264,11 @@ shadow_fx_terminal/
 
 Pra equilibrar rigor científico com viabilidade de um projeto de portfólio, o projeto opera em regime híbrido:
 
-**Contexto macroeconômico — 100% real.** Todo dado que compõe o IRF vem de fonte oficial (BCB, yfinance, Google Trends). O cenário econômico brasileiro entre 2022 e 2025 — disparada do dólar, reuniões do Copom, variação da dívida/PIB — está refletido de verdade.
+**Contexto macroeconômico: 100% real.** Todo dado que compõe o IRF vem de fonte oficial (BCB, yfinance, Google Trends). O cenário econômico brasileiro entre 2022 e 2025 (disparada do dólar, reuniões do Copom, variação da dívida/PIB) está refletido de verdade.
 
-**Transações individuais — simuladas.** As 4.509 transações processadas pelo motor de compliance vêm de `src/gerador_transacoes_mock.py`. Simulei por três razões: privacidade (mapear CPF pra carteira é sensível mesmo com blockchain pública), controle metodológico (pra validar o Isolation Forest preciso de perfil conhecido — usuário normal vs. fracionador — coisa que dado real não me dá com rótulo confiável) e infraestrutura (rodar indexador de blockchain localmente é peso que não compensa pra este projeto).
+**Transações individuais: simuladas.** As 4.509 transações processadas pelo motor de compliance vêm de `src/gerador_transacoes_mock.py`. Simulei por três razões: privacidade (mapear CPF pra carteira é sensível mesmo com blockchain pública), controle metodológico (pra validar o Isolation Forest preciso de perfil conhecido: usuário normal vs. fracionador; coisa que dado real não me dá com rótulo confiável) e infraestrutura (rodar indexador de blockchain localmente é peso que não compensa pra este projeto).
 
-Ainda assim, a transação simulada é processada dentro do contexto real: o motor avalia o comportamento do "Usuário A" contra o IRF real do dia. É um digital twin de compliance — regra de negócio sintética testada num ambiente econômico de alta fidelidade.
+Ainda assim, a transação simulada é processada dentro do contexto real: o motor avalia o comportamento do "Usuário A" contra o IRF real do dia. É um digital twin de compliance: regra de negócio sintética testada num ambiente econômico de alta fidelidade.
 
 ---
 
@@ -297,7 +297,7 @@ python src/pipeline_compliance.py       # 3 camadas → resultado_compliance.csv
 
 # 6. rodar os testes
 python -m pytest tests/ -v              # 64 testes, 4 arquivos
-                                         # (9 pulam sem data/raw/, data/processed/ e models/ locais —
+                                         # (9 pulam sem data/raw/, data/processed/ e models/ locais,
                                          #  55 rodam no CI, que não gera esses artefatos)
 ```
 
@@ -305,39 +305,39 @@ python -m pytest tests/ -v              # 64 testes, 4 arquivos
 
 ## Resultados (v2, dado real)
 
-### Fase 1 — correlação Spearman (BRL/USD × volume USDT)
+### Fase 1: correlação Spearman (BRL/USD × volume USDT)
 
 Fonte: volume diário de USDT-USD via yfinance, 1.276 registros reais (2022-2025). Substitui o dataset sintético da v1.
 
 | Semestre | r | Significativo? | Força |
 |---|:---:|:---:|---|
 | 2022-S1 | −0.208 | sim | fraca (negativa) |
-| 2022-S2 | −0.136 | não | fraca — efeito FTX/Luna, choque exógeno |
+| 2022-S2 | −0.136 | não | fraca (efeito FTX/Luna, choque exógeno) |
 | 2023-S1 | +0.434 | sim | moderada |
 | 2023-S2 | −0.034 | não | fraca |
 | 2024-S1 | +0.082 | não | fraca |
-| 2024-S2 | **+0.681** | sim | moderada/forte — pico, BRL bateu R$ 6,30 |
+| 2024-S2 | **+0.681** | sim | moderada/forte (pico, BRL bateu R$ 6,30) |
 | 2025-S1 | +0.437 | sim | moderada |
 | **Total (907 dias)** | **+0.496** | sim | moderada |
 
-Correlação não é causalidade — Spearman mostra co-movimento, não direção. As duas séries respondem ao mesmo fator latente, o risco fiscal percebido, que é o que o IRF tenta capturar.
+Correlação não é causalidade: Spearman mostra co-movimento, não direção. As duas séries respondem ao mesmo fator latente, o risco fiscal percebido, que é o que o IRF tenta capturar.
 
-### Fase 1-B — controlando o confundidor global (DXY)
+### Fase 1-B: controlando o confundidor global (DXY)
 
 O BRL/USD sobe tanto quando o Brasil piora (risco fiscal local) quanto quando o dólar global fortalece (DXY). Sem controlar o DXY, dá pra atribuir ao risco brasileiro o que na verdade é movimento global.
 
 | Análise | Coeficiente | Redução vs. bruta | Leitura |
 |---|:---:|:---:|---|
-| Spearman bruta | r = 0.496 | — | baseline |
+| Spearman bruta | r = 0.496 | - | baseline |
 | Parcial (controlando DXY) | r = 0.483 | −2.5% | fenômeno local |
-| Spearman MM30 (suavizado) | r = 0.546 | — | sinal reforçado |
+| Spearman MM30 (suavizado) | r = 0.546 | - | sinal reforçado |
 | Parcial MM30 (controlando DXY) | r = 0.542 | −0.7% | praticamente imune ao DXY |
 
-Uma queda de só 2,5% ao controlar pelo DXY indica que a correlação não é artefato do dólar global — o movimento do BRL correlaciona com o volume de USDT mesmo depois de remover o efeito do índice dólar.
+Uma queda de só 2,5% ao controlar pelo DXY indica que a correlação não é artefato do dólar global: o movimento do BRL correlaciona com o volume de USDT mesmo depois de remover o efeito do índice dólar.
 
-### Fase 1-C — atribuição geográfica via Google Trends
+### Fase 1-C: atribuição geográfica via Google Trends
 
-O paper de Britto (2026) reconhece um problema: dado on-chain de volume é global, não dá pra saber se foi o Brasil que comprou. A solução dele — e a que este projeto replica e expande — é cruzar com busca web geolocalizada.
+O paper de Britto (2026) reconhece um problema: dado on-chain de volume é global, não dá pra saber se foi o Brasil que comprou. A solução dele, e a que este projeto replica e expande, é cruzar com busca web geolocalizada.
 
 Fonte: Google Trends filtrado pra `geo='BR'`, 183 semanas (2022-2025).
 
@@ -356,7 +356,7 @@ Fonte: Google Trends filtrado pra `geo='BR'`, 183 semanas (2022-2025).
 | 3 semanas | +0.502 | sim |
 | 4 semanas | +0.496 | sim |
 
-O BRL defasado em 1 a 4 semanas correlaciona com o interesse de busca — sugere que a queda do câmbio precede o aumento de interesse em USDT, o caminho causal proposto no paper.
+O BRL defasado em 1 a 4 semanas correlaciona com o interesse de busca, o que sugere que a queda do câmbio precede o aumento de interesse em USDT, o caminho causal proposto no paper.
 
 Correlação parcial do Trends BR controlando DXY: r = +0.523, redução de só −3.2%. O interesse de busca brasileiro é robusto ao controle do dólar global.
 
@@ -373,7 +373,7 @@ Problema: volume de USDT é global, não dá pra saber quem comprou.
 3 (geoloc.):   BRL/USD ↔ busca "USDT" no Brasil: r=+0.501, significativo.
                Sinal de interesse especificamente brasileiro.
 4 (lead-lag):  BRL[t-1 sem] → interesse BR[t]: r=+0.508, significativo.
-               O câmbio precede o interesse — direcionalidade.
+               O câmbio precede o interesse: direcionalidade.
 5 (parcial):   Trends BR × BRL | DXY → r=+0.523, queda de 3.2%.
                O comportamento de busca BR é robusto ao fator global.
 
@@ -381,7 +381,7 @@ As 5 evidências juntas dão suporte metodológico razoável à hipótese
 de dolarização informal brasileira via USDT.
 ```
 
-### Fase 2 — Índice de Risco Fiscal
+### Fase 2: Índice de Risco Fiscal
 
 | Período | IRF médio | Leitura |
 |---|:---:|---|
@@ -390,9 +390,9 @@ de dolarização informal brasileira via USDT.
 | 2024-S2 | **muito alto** | pico de correlação, BRL bateu R$ 6,30, USDT como hedge |
 | 2025 | alto | continuidade do aperto fiscal |
 
-Nota de calibração: os pesos do IRF v1 (câmbio 40%, USDT 35%, Copom 25%) vieram de julgamento especializado, não de otimização empírica. O IRF v2 (`calcular_irf_v2()`) usa 6 sinais ortogonais com dado real do BCB e thresholds calibrados empiricamente (p95, `calcular_calibracao_irf_v2()`) — não são mais constante hardcoded. Ver `src/utils.py`.
+Nota de calibração: os pesos do IRF v1 (câmbio 40%, USDT 35%, Copom 25%) vieram de julgamento especializado, não de otimização empírica. O IRF v2 (`calcular_irf_v2()`) usa 6 sinais ortogonais com dado real do BCB e thresholds calibrados empiricamente (p95, `calcular_calibracao_irf_v2()`); não são mais constante hardcoded. Ver `src/utils.py`.
 
-### Fase 3 — motor de compliance AML
+### Fase 3: motor de compliance AML
 
 | Resultado | Quantidade | % |
 |---|:---:|:---:|
@@ -402,35 +402,35 @@ Nota de calibração: os pesos do IRF v1 (câmbio 40%, USDT 35%, Copom 25%) vier
 
 Números medidos em 2026-08-11, depois de corrigir um bug de calibração no `score_samples()` do Isolation Forest (a versão anterior classificava quase tudo como suspeito, por causa de um range de normalização hardcoded errado) e de reconciliar com o `IRF_LAG_DAYS=14` (lag anti-vazamento de dado) do histórico real do projeto. Detalhe em `docs/audit/audit_report_v2.md` § 6 e em `docs/tese/shadow-fx-vantagem-competitiva/TESE.md` (adendo).
 
-### O que o modelo resolve — e o que ele não resolve de graça
+### O que o modelo resolve, e o que ele não resolve de graça
 
 Sistema de compliance baseado só em regra ("flag se > R$ 10.000") gera milhares de falso positivo ou deixa passar o criminoso esperto. A simulação com 4.509 transações mostra que ML + contexto macro (IRF) melhora essa distinção, mas com custo real:
 
-**Tipo A — o poupador assustado (legítimo).** Compra USDT no desespero quando o câmbio derrete. Como o IRF entra no modelo, a IA entende que num dia de risco fiscal alto essa corrida é esperada, e tende a classificar como VERDE com mais frequência que um sistema sem contexto. Mas não é garantia: contra o rótulo de verdade do dataset, o falso positivo nesse perfil aumenta entre 2,3x e 3,5x com o IRF ligado (o número exato oscilou em 3 correções de bug independentes — ver `TESE.md`, adendo 2). O ganho de precisão geral (35,9% → 44,8%) vem em parte às custas desse perfil.
+**Tipo A: o poupador assustado (legítimo).** Compra USDT no desespero quando o câmbio derrete. Como o IRF entra no modelo, a IA entende que num dia de risco fiscal alto essa corrida é esperada, e tende a classificar como VERDE com mais frequência que um sistema sem contexto. Mas não é garantia: contra o rótulo de verdade do dataset, o falso positivo nesse perfil aumenta entre 2,3x e 3,5x com o IRF ligado (o número exato oscilou em 3 correções de bug independentes; ver `TESE.md`, adendo 2). O ganho de precisão geral (35,9% → 44,8%) vem em parte às custas desse perfil.
 
-**Tipo B — o institucional / mesa de arbitragem (legítimo, mas volumoso).** Movimenta R$ 200.000 todo dia. A Isolation Forest olha o histórico e entende que volume gigante é o "normal" dessa carteira — em vez de disparar alerta vermelho, sinaliza como AMARELO.
+**Tipo B: o institucional / mesa de arbitragem (legítimo, mas volumoso).** Movimenta R$ 200.000 todo dia. A Isolation Forest olha o histórico e entende que volume gigante é o "normal" dessa carteira: em vez de disparar alerta vermelho, sinaliza como AMARELO.
 
-**Tipo C — o fracionador / evasor (suspeito).** Faz 11 transferências de R$ 9.500 de madrugada, smurfing pra fugir do limite de R$ 10k. O modelo detecta com mais recall que sem o IRF (34,4% → 49,9%, contra o rótulo de verdade), mas ainda deixa passar mais da metade dos fracionadores reais do dataset sintético. Não é detecção perfeita — é melhor que a alternativa sem contexto.
+**Tipo C: o fracionador / evasor (suspeito).** Faz 11 transferências de R$ 9.500 de madrugada, smurfing pra fugir do limite de R$ 10k. O modelo detecta com mais recall que sem o IRF (34,4% → 49,9%, contra o rótulo de verdade), mas ainda deixa passar mais da metade dos fracionadores reais do dataset sintético. Não é detecção perfeita, é melhor que a alternativa sem contexto.
 
-Essa abordagem reduz a fadiga do time de operações via priorização, não elimina falso positivo nem garante recall total. O trade-off é medido e aceito conscientemente, não escondido, porque o dataset é sintético — otimizar em cima dele arriscaria ajustar pra um ruído que não existe em produção real.
+Essa abordagem reduz a fadiga do time de operações via priorização, não elimina falso positivo nem garante recall total. O trade-off é medido e aceito conscientemente, não escondido, porque o dataset é sintético: otimizar em cima dele arriscaria ajustar pra um ruído que não existe em produção real.
 
-### Fase 4 — dashboard e API
+### Fase 4: dashboard e API
 
 A fase 4 materializa o motor de compliance numa interface visual, com backend e frontend separados:
 
-- **FastAPI (`src/api.py`)** — backend desacoplado, expõe endpoints (IRF atual, histórico, score de transação) pra integração com outros sistemas da corretora.
-- **Streamlit (`app.py`)** — dashboard focado na experiência do analista de compliance.
+- **FastAPI (`src/api.py`)**: backend desacoplado, expõe endpoints (IRF atual, histórico, score de transação) pra integração com outros sistemas da corretora.
+- **Streamlit (`app.py`)**: dashboard focado na experiência do analista de compliance.
 
 **O que o app faz:**
 
-1. **Dashboard principal** — KPIs em tempo real (IRF mais recente, total de transações processadas), funil do pipeline AML (VERDE/AMARELO/VERMELHO), histórico do IRF no tempo e tabela dos casos de ação imediata.
-2. **Compliance scanner** — simulador em tempo real: o analista preenche os dados de uma transferência, o motor cruza com o IRF do dia e as regras da Camada 1, e devolve um score (0-100) e o alerta. Se ficar AMARELO, o app já mostra o prompt que o LLM-as-judge usaria pra investigar.
-3. **Análise IRF** — decompõe o índice nos 3 fatores (câmbio 40%, supply de USDT 35%, atas do Copom 25%) pra a mesa de operações entender por que o risco está alto naquele dia.
-4. **Sobre o projeto** — conta o pivô da análise pro produto, e documenta as resoluções do BCB aplicáveis.
+1. **Dashboard principal**: KPIs em tempo real (IRF mais recente, total de transações processadas), funil do pipeline AML (VERDE/AMARELO/VERMELHO), histórico do IRF no tempo e tabela dos casos de ação imediata.
+2. **Compliance scanner**: simulador em tempo real: o analista preenche os dados de uma transferência, o motor cruza com o IRF do dia e as regras da Camada 1, e devolve um score (0-100) e o alerta. Se ficar AMARELO, o app já mostra o prompt que o LLM-as-judge usaria pra investigar.
+3. **Análise IRF**: decompõe o índice nos 3 fatores (câmbio 40%, supply de USDT 35%, atas do Copom 25%) pra a mesa de operações entender por que o risco está alto naquele dia.
+4. **Sobre o projeto**: conta o pivô da análise pro produto, e documenta as resoluções do BCB aplicáveis.
 
-> **Nota:** os prints abaixo são da paleta anterior (redesign de 2026-08-27 trocou pra tema de terminal financeiro — ver `AGENTS.md` § Redesign da UI). Pendente recapturar.
+> **Nota:** os prints abaixo são da paleta anterior (redesign de 2026-08-27 trocou pra tema de terminal financeiro, ver `AGENTS.md` § Redesign da UI). Pendente recapturar.
 
-| Compliance Scanner — caso VERDE | Compliance Scanner — caso VERMELHO, rascunho COAF |
+| Compliance Scanner, caso VERDE | Compliance Scanner, caso VERMELHO, rascunho COAF |
 |---|---|
 | ![Score de compliance 21.2, alerta VERDE, sem flags da Camada 1](reports/streamlit_scanner_green.png) | ![Rascunho de Relatório de Atividade Suspeita gerado automaticamente](reports/streamlit_scanner_red_coaf.png) |
 
@@ -446,11 +446,11 @@ uvicorn src.api:app --reload --port 8000
 
 ## Decisões técnicas
 
-**Por que Spearman e não Pearson?** Série financeira raramente é normalmente distribuída. Spearman mede correlação de postos, é robusta a outlier e assimetria — a mesma escolha do paper original.
+**Por que Spearman e não Pearson?** Série financeira raramente é normalmente distribuída. Spearman mede correlação de postos, é robusta a outlier e assimetria: a mesma escolha do paper original.
 
-**Por que Isolation Forest pra AML?** Em anti-lavagem, dado rotulado de fraude é raro e sigiloso. Isolation Forest é não-supervisionado — não precisa de exemplo de fraude pra treinar, isola pontos que se distanciam do comportamento normal em menos divisões de árvore.
+**Por que Isolation Forest pra AML?** Em anti-lavagem, dado rotulado de fraude é raro e sigiloso. Isolation Forest é não-supervisionado: não precisa de exemplo de fraude pra treinar, isola pontos que se distanciam do comportamento normal em menos divisões de árvore.
 
-**O diferencial: IRF como feature contextual.** A maioria dos sistemas de AML olha só o comportamento individual. Aqui o IRF entra como feature do modelo — R$ 8.000 de USDT num dia normal e R$ 8.000 num dia em que o real perdeu 5% são padrões diferentes.
+**O diferencial: IRF como feature contextual.** A maioria dos sistemas de AML olha só o comportamento individual. Aqui o IRF entra como feature do modelo: R$ 8.000 de USDT num dia normal e R$ 8.000 num dia em que o real perdeu 5% são padrões diferentes.
 
 **Filtros em cascata (Stanford CS230).** Cada camada resolve os casos óbvios e passa o difícil pra camada seguinte, mais cara. Isso reduz o custo de inferência em cerca de 85% frente a rodar o LLM em tudo.
 
@@ -467,23 +467,23 @@ uvicorn src.api:app --reload --port 8000
 
 O Docker atual (não-root, healthcheck, `docker-compose` com 3 serviços) é sólido pra rodar local ou demonstrar o projeto. Auditoria de 2026-08-11 levantou 5 lacunas pra apontar um domínio real nele; 3 foram corrigidas em 2026-08-27, 2 seguem como débito registrado:
 
-1. ~~**Auth falha aberta.**~~ **Corrigido.** `src/api.py` agora recusa subir sem `API_KEY_INTERNA` (fail-closed) — só abre sem chave se `API_AUTH_OPCIONAL=true` for setado explicitamente, pra ambiente de dev isolado.
+1. ~~**Auth falha aberta.**~~ **Corrigido.** `src/api.py` agora recusa subir sem `API_KEY_INTERNA` (fail-closed); só abre sem chave se `API_AUTH_OPCIONAL=true` for setado explicitamente, pra ambiente de dev isolado.
 2. ~~**CORS hardcoded pra `localhost:8501`.**~~ **Corrigido.** Vem de `CORS_ORIGINS` (lista separada por vírgula), default mantém o comportamento antigo se a variável não for setada.
-3. ~~**`docker-compose up --build` sozinho não funciona na primeira vez.**~~ **Corrigido.** `entrypoint.sh` detecta `data/`/`models/` vazios e roda o setup automaticamente antes de subir o serviço — `docker-compose run setup` continua disponível só pra forçar regeneração manual depois.
+3. ~~**`docker-compose up --build` sozinho não funciona na primeira vez.**~~ **Corrigido.** `entrypoint.sh` detecta `data/`/`models/` vazios e roda o setup automaticamente antes de subir o serviço; `docker-compose run setup` continua disponível só pra forçar regeneração manual depois.
 4. ~~**CI não builda a imagem Docker.**~~ **Corrigido.** `.github/workflows/ci.yml` tem job `docker-build` que builda a imagem a cada push/PR.
-5. **Débitos já registrados em `AGENTS.md` que pesam pra escala real**: sem banco (CSV + joblib em memória, perde tudo a cada restart), processamento síncrono, `starlette` preso numa versão vulnerável por causa do range do Streamlit. Decisão de escopo consciente (ADR-0006), não corrigido — não é bug, é fronteira de portfólio vs. produto real.
+5. **Débitos já registrados em `AGENTS.md` que pesam pra escala real**: sem banco (CSV + joblib em memória, perde tudo a cada restart), processamento síncrono, `starlette` preso numa versão vulnerável por causa do range do Streamlit. Decisão de escopo consciente (ADR-0006), não corrigido: não é bug, é fronteira de portfólio vs. produto real.
 
-Item 5 é a diferença entre "roda no meu Docker" e "aguenta tráfego real" — decisão de escopo explícita, não descuido.
+Item 5 é a diferença entre "roda no meu Docker" e "aguenta tráfego real": decisão de escopo explícita, não descuido.
 
 ## Roadmap
 
-- [x] Fase 1 — análise exploratória e prova da correlação
-- [x] Fase 2 — Índice de Risco Fiscal composto
-- [x] Fase 3 — motor de compliance AML em 3 camadas
-- [x] Fase 4 — API FastAPI (`/score` desacoplado)
-- [x] Fase 4 — dashboard Streamlit
-- [x] Fase 4 — testes unitários (pytest)
-- [x] Fase 5 — agente RAG (Camada 3), com fallback pra indisponibilidade da API
+- [x] Fase 1: análise exploratória e prova da correlação
+- [x] Fase 2: Índice de Risco Fiscal composto
+- [x] Fase 3: motor de compliance AML em 3 camadas
+- [x] Fase 4: API FastAPI (`/score` desacoplado)
+- [x] Fase 4: dashboard Streamlit
+- [x] Fase 4: testes unitários (pytest)
+- [x] Fase 5: agente RAG (Camada 3), com fallback pra indisponibilidade da API
 
 ---
 
@@ -519,11 +519,11 @@ Débitos de maturidade conhecidos: migrar de processamento síncrono pra fila as
 
 ## Segurança e privacidade
 
-**LGPD.** Identificador de usuário (tipo CPF) nunca é processado em texto claro — é transformado em hash SHA-256 irreversível antes de chegar ao modelo. O motor identifica padrão de comportamento sem nunca saber quem é a pessoa por trás.
+**LGPD.** Identificador de usuário (tipo CPF) nunca é processado em texto claro: é transformado em hash SHA-256 irreversível antes de chegar ao modelo. O motor identifica padrão de comportamento sem nunca saber quem é a pessoa por trás.
 
 **API key.** Middleware exige `X-API-Key` válida em toda requisição, pra impedir acesso não autorizado ao score de risco.
 
-**Docker hardening.** O container roda como `appuser` sem privilégio, não como root — se houver invasão, o atacante fica preso num ambiente sem permissão pra afetar o servidor.
+**Docker hardening.** O container roda como `appuser` sem privilégio, não como root. Se houver invasão, o atacante fica preso num ambiente sem permissão pra afetar o servidor.
 
 **Defesa em profundidade.** As Camadas 1 e 2 usam regra matemática e estatística, imunes a prompt injection. A Camada 3 (LLM) só atua nos casos onde as camadas anteriores já validaram a segurança inicial, o que reduz o risco de alucinação ou manipulação.
 
@@ -533,11 +533,11 @@ Débitos de maturidade conhecidos: migrar de processamento síncrono pra fila as
 
 - Britto, P. J. (2026). *Dolarização Informal: Stablecoins como resposta à instabilidade monetária brasileira*. OTC Research.
 - Banco Central do Brasil. Resoluções BCB nº 519, 520 e 521 (2026).
-- Stanford CS230 Deep Learning — Cascaded Heuristic Filters & LLM-as-judge patterns.
+- Stanford CS230 Deep Learning: Cascaded Heuristic Filters & LLM-as-judge patterns.
 - Liu, F. T., Ting, K. M., & Zhou, Z. H. (2008). *Isolation Forest*. IEEE ICDM.
 
 ---
 
 ## Licença
 
-MIT — ver [LICENSE](LICENSE). Fique à vontade pra explorar, mas mantenha os créditos ao autor original.
+MIT, ver [LICENSE](LICENSE). Fique à vontade pra explorar, mas mantenha os créditos ao autor original.
