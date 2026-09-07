@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Snapshot de pesquisa sobre risco fiscal e compliance de stablecoins no Brasil.">
+  <title>Shadow FX Terminal | Pesquisa AML</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --paper:#f4f0e8; --surface:#fbf9f4; --ink:#172033; --muted:#667085; --line:#cfc8bc; --oxblood:#6d2432; --copper:#b46a45; --amber:#a86015; --green:#38644a; --soft-red:#ead2d0; --soft-amber:#f0dfc9; --soft-slate:#e5e6e7; }
+    * { box-sizing:border-box; } html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.55 'Work Sans',sans-serif; }
+    button,input { font:inherit; } button { cursor:pointer; }
+    .shell { max-width:1440px; padding:0 32px; margin:auto; }
+    .masthead { display:grid; grid-template-columns:220px 1fr auto; gap:28px; align-items:center; border-bottom:1px solid var(--ink); min-height:88px; }
+    .brand { font:600 29px/1 'Source Serif 4',serif; letter-spacing:.02em; } .brand small { display:block; margin-top:5px; font:500 10px/1 'DM Mono',monospace; letter-spacing:.35em; }
+    .eyebrow,.meta,.label { font:500 11px/1.3 'DM Mono',monospace; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+    .snapshot-title { font:600 21px/1.1 'Source Serif 4',serif; } .snapshot-title p { margin:5px 0 0; font:13px/1.4 'Work Sans',sans-serif; }
+    .meta { text-align:right; } .method { border:1px solid var(--ink); padding:10px 14px; background:transparent; color:var(--ink); font:500 11px 'DM Mono',monospace; letter-spacing:.04em; text-transform:uppercase; }
+    main { padding:38px 0 64px; } section { padding:28px 0; border-bottom:1px solid var(--line); }
+    h1,h2,h3,p { margin-top:0; } h1,h2,h3 { font-family:'Source Serif 4',serif; font-weight:600; letter-spacing:-.02em; }
+    h1 { max-width:750px; margin-bottom:12px; font-size:clamp(36px,5vw,66px); line-height:1.02; } h2 { font-size:29px; line-height:1.15; margin-bottom:8px; } h3 { font-size:20px; margin-bottom:8px; }
+    .intro { max-width:730px; font-size:19px; color:#343b49; } .notice { border-left:4px solid var(--oxblood); padding:13px 16px; max-width:850px; background:rgba(109,36,50,.06); font-size:14px; }
+    .grid { display:grid; gap:28px; } .overview { grid-template-columns:minmax(0,1.55fr) minmax(330px,.9fr); }
+    .kpis { display:grid; grid-template-columns:repeat(4,1fr); margin:22px 0 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+    .kpi { min-height:112px; padding:15px 17px; border-right:1px solid var(--line); } .kpi:last-child { border:0; }
+    .value { display:block; margin:8px 0 3px; font:600 33px/1 'Source Serif 4',serif; font-variant-numeric:tabular-nums; } .value.critical { color:var(--oxblood); } .value.warning { color:var(--amber); } .value.safe { color:var(--green); }
+    .panel-heading { display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:12px; } .panel-heading p { margin:0; font-size:13px; color:var(--muted); }
+    .chart-wrap { position:relative; min-height:330px; border-top:1px solid var(--ink); border-bottom:1px solid var(--line); padding:12px 0 8px; } #irf-chart { display:block; width:100%; height:auto; }
+    .legend { display:flex; flex-wrap:wrap; gap:12px 18px; margin:10px 0; color:var(--muted); font-size:12px; } .legend i { display:inline-block; width:18px; height:2px; vertical-align:middle; margin-right:5px; background:var(--ink); } .legend .danger { background:var(--oxblood); } .legend .attention { background:var(--copper); }
+    .alert-list { border-top:1px solid var(--ink); } .alert-row { display:grid; grid-template-columns:34px 1.3fr 1fr 58px; gap:10px; align-items:center; padding:13px 0; border-bottom:1px solid var(--line); font-size:13px; }
+    .rank { width:25px; height:25px; display:grid; place-items:center; color:#fff; background:var(--oxblood); font:500 12px 'DM Mono',monospace; } .score { text-align:right; color:var(--oxblood); font:600 23px/1 'Source Serif 4',serif; } .muted { color:var(--muted); font-size:12px; }
+    .scanner { grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr); } .form-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px 18px; margin-top:20px; } label { display:block; font-size:13px; font-weight:600; } input { display:block; width:100%; margin-top:5px; border:1px solid #9b968d; padding:10px 11px; background:var(--surface); color:var(--ink); border-radius:0; } input:focus { outline:3px solid rgba(109,36,50,.24); outline-offset:2px; }
+    .form-note { grid-column:1/-1; margin:2px 0 0; color:var(--muted); font-size:12px; } .primary { margin-top:20px; border:0; padding:12px 17px; background:var(--oxblood); color:#fff; font-weight:600; } .primary:hover { background:#531823; }
+    .result { border-left:1px solid var(--line); padding-left:28px; } .result-score { display:flex; align-items:end; gap:14px; margin:14px 0; } .result-score strong { font:600 62px/.85 'Source Serif 4',serif; color:var(--oxblood); font-variant-numeric:tabular-nums; } .result-score span { padding-bottom:5px; color:var(--muted); font:13px 'DM Mono',monospace; } .risk-word { margin-bottom:14px; color:var(--oxblood); font:600 26px/1 'Source Serif 4',serif; }
+    .rule-list { list-style:none; padding:0; margin:16px 0 0; border-top:1px solid var(--line); } .rule-list li { display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--line); font-size:13px; } .rule-list b { font-family:'DM Mono',monospace; }
+    .signals { grid-template-columns:repeat(3,1fr); gap:0; border-top:1px solid var(--ink); border-left:1px solid var(--line); } .signal { padding:16px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); } .signal .signal-value { display:block; margin:8px 0; font:600 25px/1 'Source Serif 4',serif; font-variant-numeric:tabular-nums; } .signal p { color:var(--muted); font-size:12px; margin:0; }
+    table { width:100%; border-collapse:collapse; font-size:13px; } th { text-align:left; padding:9px 7px; border-bottom:1px solid var(--ink); font:500 11px 'DM Mono',monospace; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); } td { padding:10px 7px; border-bottom:1px solid var(--line); vertical-align:top; } .table-wrap { overflow-x:auto; }
+    .limitations { display:grid; grid-template-columns:auto minmax(0,1fr) repeat(2,minmax(155px,.45fr)); gap:24px; align-items:start; } .mark { width:56px; height:56px; border:2px solid var(--oxblood); border-radius:50%; display:grid; place-items:center; color:var(--oxblood); font:600 40px/1 'Source Serif 4',serif; } .limitations ul { margin:0; padding-left:18px; font-size:13px; } .limitations h3 { font-size:17px; }
+    footer { padding-top:24px; color:var(--muted); font-size:12px; } a { color:var(--oxblood); }
+    @media (max-width:900px) { .masthead { grid-template-columns:1fr auto; padding:18px 0; } .snapshot-title { grid-column:1/-1; grid-row:2; } .overview,.scanner { grid-template-columns:1fr; } .result { border-left:0; border-top:1px solid var(--line); padding:26px 0 0; } .limitations { grid-template-columns:auto 1fr; } .limitations > div:nth-last-child(-n+2) { grid-column:2; } }
+    @media (max-width:620px) { .shell { padding:0 18px; } .method { display:none; } .kpis { grid-template-columns:repeat(2,1fr); } .kpi:nth-child(2) { border-right:0; } .kpi { border-bottom:1px solid var(--line); } .form-grid,.signals { grid-template-columns:1fr; } .signal { border-left:0; } .alert-row { grid-template-columns:28px 1fr 52px; } .alert-row .alert-type { display:none; } }
+    @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <header class="masthead">
+    <div class="brand">Shadow FX<small>Terminal</small></div>
+    <div class="snapshot-title">Snapshot de pesquisa<p>Risco fiscal e compliance de stablecoins no Brasil</p></div>
+    <div class="meta" id="snapshot-date"></div>
+    <a class="method" href="#metodologia">Metodologia</a>
+  </header>
+  <main>
+    <section>
+      <div class="eyebrow">Monitoramento histórico</div>
+      <h1>Contexto macro antes de decidir sobre uma transação.</h1>
+      <p class="intro">O índice cruza seis sinais fiscais e monetários para dar contexto ao motor de compliance. Ele não substitui investigação humana, nem identifica crime por conta própria.</p>
+      <div class="notice">Este é um artefato de pesquisa. As transações são sintéticas e o contexto macroeconômico é histórico. A página não consulta APIs, não grava dados e não executa o modelo de machine learning.</div>
+    </section>
+    <section class="grid overview" aria-labelledby="visao-geral">
+      <div>
+        <div class="panel-heading"><div><div class="eyebrow">Índice de risco fiscal</div><h2 id="visao-geral">Evolução histórica</h2></div><p id="periodo"></p></div>
+        <div class="legend"><span><i></i>IRF v2</span><span><i class="danger"></i>Risco alto, a partir de 70</span><span><i class="attention"></i>Atenção, entre 40 e 69</span></div>
+        <div class="chart-wrap"><svg id="irf-chart" viewBox="0 0 820 330" role="img" aria-label="Série histórica do Índice de Risco Fiscal"></svg></div>
+        <div class="kpis" id="kpis"></div>
+      </div>
+      <aside aria-labelledby="alertas-title"><div class="eyebrow">Fila de análise</div><h2 id="alertas-title">Alertas priorizados</h2><div class="alert-list" id="alert-list"></div></aside>
+    </section>
+    <section class="grid scanner" aria-labelledby="scanner-title">
+      <div>
+        <div class="eyebrow">Simulador didático</div><h2 id="scanner-title">Compliance Scanner</h2>
+        <p>Fórmula determinística de demonstração. Ela reproduz a regra pública do dashboard, não o Isolation Forest do pipeline batch.</p>
+        <form id="scanner-form">
+          <div class="form-grid">
+            <label for="user-id">ID sintético do usuário<input id="user-id" value="USR_TEST_001" autocomplete="off"></label>
+            <label for="valor">Valor da transação, R$<input id="valor" type="number" min="0" step="100" value="9500"></label>
+            <label for="hora">Hora da transação<input id="hora" type="number" min="0" max="23" value="3"></label>
+            <label for="wallets">Carteiras de destino no dia<input id="wallets" type="number" min="1" value="12"></label>
+            <label for="irf-input">IRF v2 do contexto<input id="irf-input" type="number" min="0" max="100" step=".1"></label>
+            <p class="form-note">O score soma valor, horário, número de carteiras, IRF e regras BCB. Os pesos aparecem no resultado.</p>
+          </div>
+          <button class="primary" type="submit">Analisar cenário</button>
+        </form>
+      </div>
+      <div class="result" aria-live="polite"><div class="eyebrow">Resultado da avaliação</div><div class="result-score"><strong id="score">0,0</strong><span>/100</span></div><div class="risk-word" id="risk-word">Aguardando cenário</div><p id="result-summary">Preencha os campos para ver a composição da regra.</p><ul class="rule-list" id="rule-list"></ul></div>
+    </section>
+    <section id="metodologia"><div class="eyebrow">IRF v2</div><h2>Seis sinais, uma leitura de contexto</h2><p class="intro">Os valores abaixo são os últimos disponíveis no snapshot. Cada sinal tem escala própria; o índice aplica normalização e pesos documentados no projeto.</p><div class="grid signals" id="signals"></div></section>
+    <section><div class="eyebrow">Evidência macroeconômica</div><h2>Atas do Copom indexadas</h2><div class="table-wrap"><table><thead><tr><th>Data</th><th>Decisão Selic</th><th>Tom</th><th>Score hawkish</th><th>Fonte</th></tr></thead><tbody id="copom-table"></tbody></table></div></section>
+    <section><div class="limitations"><div class="mark" aria-hidden="true">!</div><div><h3>Limitações e uso adequado</h3><ul><li>O resultado do scanner é uma regra de demonstração, não um parecer de compliance.</li><li>O pipeline completo usa transações sintéticas para preservar privacidade e controlar os rótulos.</li><li>A decisão final exige investigação humana e informação que este snapshot não contém.</li></ul></div><div><div class="eyebrow">Fonte</div><p id="source"></p></div><div><div class="eyebrow">Cobertura</div><p id="coverage"></p></div></div></section>
+  </main>
+  <footer>Shadow FX Terminal. Metodologia, limitações e código-fonte disponíveis no <a href="https://github.com/luizmaibashi/shadow_fx_terminal">repositório do projeto</a>.</footer>
+</div>
+<script id="snapshot" type="application/json">__SNAPSHOT_JSON__</script>
+<script>
+(() => {
+  'use strict';
+  const SNAP = JSON.parse(document.getElementById('snapshot').textContent);
+  const $ = selector => document.querySelector(selector);
+  const num = new Intl.NumberFormat('pt-BR', {maximumFractionDigits:1});
+  const date = value => new Date(value).toLocaleDateString('pt-BR', {timeZone:'UTC'});
+  const money = value => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(value);
+  const atual = SNAP.irf.atual.valor;
+  $('#snapshot-date').textContent = 'Gerado em ' + new Date(SNAP.metadados.gerado_em).toLocaleString('pt-BR');
+  $('#periodo').textContent = date(SNAP.resumo.periodo_irf.inicio) + ' a ' + date(SNAP.resumo.periodo_irf.fim);
+  $('#irf-input').value = atual.toFixed(1);
+  $('#source').textContent = SNAP.metadados.fonte;
+  $('#coverage').textContent = SNAP.resumo.total_transacoes.toLocaleString('pt-BR') + ' transações sintéticas e ' + SNAP.atas_copom.length + ' atas.';
+  const alertas = SNAP.resumo.alertas;
+  $('#kpis').innerHTML = [
+    ['IRF atual', num.format(atual), atual >= 70 ? 'critical' : atual >= 40 ? 'warning' : 'safe', date(SNAP.irf.atual.data)],
+    ['Transações analisadas', SNAP.resumo.total_transacoes.toLocaleString('pt-BR'), '', 'snapshot do pipeline'],
+    ['Monitorar', (alertas.AMARELO || 0).toLocaleString('pt-BR'), 'warning', 'alerta amarelo'],
+    ['Prioridade alta', (alertas.VERMELHO || 0).toLocaleString('pt-BR'), 'critical', 'alerta vermelho'],
+  ].map(([label,value,kind,note]) => '<div class="kpi"><span class="label">'+label+'</span><strong class="value '+kind+'">'+value+'</strong><span class="muted">'+note+'</span></div>').join('');
+  $('#alert-list').innerHTML = SNAP.alertas_vermelhos.slice(0,5).map((item,index) => '<div class="alert-row"><span class="rank">'+(index+1)+'</span><div><b>'+item.user_id+'</b><br><span class="muted">'+(item.c1_razoes || 'sem regra declarada')+'</span></div><span class="alert-type muted">'+item.tipo_usuario+'</span><span class="score">'+num.format(item.score_final)+'</span></div>').join('') || '<p class="muted">Sem alertas vermelhos no snapshot.</p>';
+  function chart() {
+    const svg = $('#irf-chart'); const points = SNAP.irf.serie; const W=820,H=330,m={l:48,r:14,t:14,b:35}, iw=W-m.l-m.r, ih=H-m.t-m.b;
+    const x = i => m.l + i * iw / Math.max(points.length - 1, 1); const y = value => m.t + ih - (value / 100) * ih;
+    let parts = '<title>Histórico do Índice de Risco Fiscal v2</title><desc>Uma linha mostra o IRF entre 0 e 100. As faixas de atenção começam em 40 e de risco alto em 70.</desc>';
+    parts += '<rect x="'+m.l+'" y="'+y(100)+'" width="'+iw+'" height="'+(y(70)-y(100))+'" fill="#ead2d0"/><rect x="'+m.l+'" y="'+y(70)+'" width="'+iw+'" height="'+(y(40)-y(70))+'" fill="#f0dfc9"/>';
+    [0,20,40,60,70,80,100].forEach(v => { parts += '<line x1="'+m.l+'" y1="'+y(v)+'" x2="'+(W-m.r)+'" y2="'+y(v)+'" stroke="#cfc8bc" stroke-width="1"/><text x="'+(m.l-8)+'" y="'+(y(v)+4)+'" text-anchor="end" fill="#667085" font-size="11">'+v+'</text>'; });
+    const line = points.map((p,i) => (i?'L':'M') + x(i).toFixed(1) + ',' + y(Number(p.irf_v2 ?? p.irf)).toFixed(1)).join(' ');
+    parts += '<path d="'+line+'" fill="none" stroke="#172033" stroke-width="2.1" stroke-linejoin="round"/><line x1="'+m.l+'" y1="'+y(70)+'" x2="'+(W-m.r)+'" y2="'+y(70)+'" stroke="#6d2432" stroke-width="1.2" stroke-dasharray="4 4"/>';
+    const labels=[0,Math.floor((points.length-1)/2),points.length-1]; labels.forEach(i => { parts += '<text x="'+x(i)+'" y="'+(H-10)+'" text-anchor="middle" fill="#667085" font-size="11">'+date(points[i].date)+'</text>'; }); svg.innerHTML=parts;
+  }
+  chart();
+  const signalDefs = [
+    ['Dívida/PIB','divida_pib_var','Variação mensal da dívida bruta em proporção ao PIB.'], ['Câmbio ajustado','brl_adj_dxy_30d','Movimento do Real descontando o efeito global do dólar.'], ['Inflação','ipca_desvio_meta','Desvio do IPCA acumulado em relação à meta.'], ['Copom','score_copom','Tom da política monetária, usado como âncora ou agravante.'], ['Demanda por USDT','variacao_usdt_30d','Variação de 30 dias na demanda usada como proxy.'], ['Atividade','ibc_br_var','Variação da atividade econômica, com recessão como agravante.']
+  ]; const ultimo = SNAP.irf.serie[SNAP.irf.serie.length-1];
+  $('#signals').innerHTML = signalDefs.map(([name,key,help]) => '<article class="signal"><span class="label">'+name+'</span><strong class="signal-value">'+(ultimo[key] == null ? 'n/d' : num.format(ultimo[key]))+'</strong><p>'+help+'</p></article>').join('');
+  $('#copom-table').innerHTML = SNAP.atas_copom.slice().reverse().map(item => '<tr><td>'+date(item.data)+'</td><td>'+item.decisao_selic+'</td><td>'+item.tom+'</td><td>'+num.format(item.score_hawkish)+'</td><td>'+item.fonte+'</td></tr>').join('');
+  function analisar(event) {
+    if (event) event.preventDefault();
+    const valor = Math.max(0, Number($('#valor').value) || 0); const hora = Math.min(23,Math.max(0,Number($('#hora').value) || 0)); const wallets = Math.max(1,Number($('#wallets').value) || 1); const irf = Math.min(100,Math.max(0,Number($('#irf-input').value) || 0));
+    const regras=[]; if(valor >= 10000) regras.push('R1: valor igual ou superior a R$ 10 mil'); if(valor >= 8500 && valor < 10000) regras.push('R4: possível fracionamento próximo ao limite'); if(hora <= 5 && valor > 5000) regras.push('R5: operação de madrugada com valor alto'); if(wallets > 5) regras.push('R3: mais de cinco carteiras no dia');
+    const valorPts=Math.min(valor/10000,1)*30, horaPts=(hora<=5?20:0), walletsPts=Math.min(wallets/20,1)*20, irfPts=irf/100*15, regraPts=(regras.length?15:0); const score=Math.min(valorPts+horaPts+walletsPts+irfPts+regraPts,100); const alerta=score>=70?'VERMELHO':score>=40?'AMARELO':'VERDE'; const classe=alerta==='VERMELHO'?'critical':alerta==='AMARELO'?'warning':'safe';
+    $('#score').textContent=num.format(score); $('#score').className=classe; $('#risk-word').textContent='Alerta '+alerta; $('#risk-word').className='risk-word '+classe; $('#result-summary').textContent=regras.length ? 'Regras BCB acionadas: '+regras.join('; ')+'.' : 'Sem regra BCB acionada neste cenário. O score continua sendo uma regra de demonstração.';
+    const pesos=[['Valor',valorPts,30],['Horário',horaPts,20],['Carteiras',walletsPts,20],['Contexto IRF',irfPts,15],['Regras BCB',regraPts,15]]; $('#rule-list').innerHTML=pesos.map(([nome,pontos,maximo]) => '<li><span>'+nome+' <span class="muted">máx. '+maximo+'</span></span><b>'+num.format(pontos)+'</b></li>').join('');
+  }
+  $('#scanner-form').addEventListener('submit', analisar); analisar();
+})();
+</script>
+</body>
+</html>

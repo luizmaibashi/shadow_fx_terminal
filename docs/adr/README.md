@@ -9,6 +9,7 @@
 | [0003](0003-irf-v2-seis-sinais.md) | IRF v2 com 6 Sinais Ortogonais | Accepted | 2026-05-05 |
 | [0004](0004-fastapi-streamlit-architecture.md) | FastAPI + Streamlit como Stack de Deploy | Accepted | 2026-05-10 |
 | [0006](0006-persistencia-csv-em-memoria.md) | Persistência em CSV/joblib em Memória (não migrar pra banco agora) | Accepted | 2026-08-10 |
+| [0007](0007-dashboard-estatico-em-github-pages.md) | Dashboard estático em GitHub Pages | Accepted | 2026-09-07 |
 
 ---
 
