@@ -16,6 +16,7 @@ lxml
 fastapi
 uvicorn[standard]
 streamlit
+plotly
 pytest
 google-genai
 gTTS

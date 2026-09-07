@@ -53,9 +53,13 @@ app = FastAPI(
     docs_url="/docs",
 )
 
+import os
+
+CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:8501").split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8501"], # Restrito ao Dashboard local por padrao
+    allow_origins=CORS_ORIGINS,  # configurável via CORS_ORIGINS (lista separada por vírgula); default = dashboard local
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
@@ -63,20 +67,27 @@ app.add_middleware(
 # ── Middleware de Segurança (API Key) ────────────────────────────────
 from fastapi import Request
 from fastapi.responses import JSONResponse
-import os
 
 API_KEY_NAME = "X-API-Key"
 API_KEY = os.getenv("API_KEY_INTERNA")
+API_AUTH_OPCIONAL = os.getenv("API_AUTH_OPCIONAL", "false").lower() == "true"
+
+if not API_KEY and not API_AUTH_OPCIONAL:
+    raise RuntimeError(
+        "API_KEY_INTERNA nao definida. A API recusa subir sem chave (fail-closed), "
+        "pra nao expor endpoint de compliance sem autenticacao por engano. "
+        "Defina API_KEY_INTERNA no .env, ou explicitamente API_AUTH_OPCIONAL=true "
+        "se for rodar num ambiente isolado sem risco (ex: dev local sem rede externa)."
+    )
 if not API_KEY:
-    logger.warning("API_KEY_INTERNA nao definida. Endpoints protegidos estao desabilitados.")
-    logger.warning("Crie um arquivo .env com API_KEY_INTERNA=seu-valor ou defina a variavel de ambiente.")
+    logger.warning("API_KEY_INTERNA nao definida, mas API_AUTH_OPCIONAL=true — endpoints protegidos estao ABERTOS. Nunca usar assim com a API exposta publicamente.")
 
 @app.middleware("http")
 async def verificar_api_key(request: Request, call_next):
-    # Pular verificacao para docs, raiz e se API_KEY nao foi configurada
+    # Pular verificacao para docs, raiz e se API_KEY nao foi configurada (modo opcional explicito)
     if not API_KEY or request.url.path in ["/docs", "/openapi.json", "/"]:
         return await call_next(request)
-    
+
     api_key_header = request.headers.get(API_KEY_NAME)
     if api_key_header != API_KEY:
         return JSONResponse(

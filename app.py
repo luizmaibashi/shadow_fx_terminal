@@ -11,7 +11,8 @@ Execute: streamlit run app.py
 import sys
 import warnings
 import pandas as pd
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import streamlit as st
 from pathlib import Path
 
@@ -33,81 +34,83 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── CSS Premium ───────────────────────────────────────────────────────
+# ── CSS — terminal de compliance, não landing page ─────────────────────
+# Paleta validada (dataviz skill, dark mode): status good/warning/critical
+# vêm de references/palette.md, não escolhidos no olho.
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
 }
 
-.stApp { background-color: #0a0a0f; }
+.stApp { background-color: #0d0d0d; }
 
 /* Header */
 .main-header {
-    background: linear-gradient(135deg, #0f0f1a 0%, #1a0a2e 50%, #0d1f3c 100%);
-    border: 1px solid #1e1e3a;
-    border-radius: 16px;
-    padding: 28px 36px;
-    margin-bottom: 24px;
+    background: #1a1a19;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 6px;
+    padding: 22px 28px;
+    margin-bottom: 20px;
 }
 .main-header h1 {
-    font-size: 2.4rem;
-    font-weight: 900;
-    background: linear-gradient(90deg, #00ffcc, #7c3aed, #3b82f6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #ffffff;
     margin: 0; padding: 0;
+    letter-spacing: -0.2px;
 }
-.main-header p { color: #cbd5e1; font-size: 1.0rem; margin: 8px 0 0 0; font-weight: 400; }
+.main-header p { color: #c3c2b7; font-size: 0.92rem; margin: 6px 0 0 0; font-weight: 400; }
 
 /* KPI cards */
 .kpi-card {
-    background: linear-gradient(135deg, #0f0f1a, #1a1a2e);
-    border: 1px solid #1e1e3a;
-    border-radius: 14px;
-    padding: 22px 20px;
-    text-align: center;
-    transition: transform 0.2s, border-color 0.2s;
+    background: #1a1a19;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 6px;
+    padding: 18px 18px;
+    text-align: left;
 }
-.kpi-card:hover { transform: translateY(-3px); border-color: #3b82f6; }
-.kpi-title  { color: #94a3b8; font-size: 0.85rem; font-weight: 600;
-               text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 10px; }
-.kpi-value  { font-size: 2.6rem; font-weight: 900; line-height: 1; letter-spacing: -1px; }
-.kpi-sub    { color: #94a3b8; font-size: 0.85rem; margin-top: 8px; font-weight: 400; }
+.kpi-title  { color: #898781; font-size: 0.75rem; font-weight: 600;
+               text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+.kpi-value  { font-size: 2.0rem; font-weight: 700; line-height: 1; letter-spacing: -0.5px;
+               font-variant-numeric: tabular-nums; }
+.kpi-sub    { color: #898781; font-size: 0.8rem; margin-top: 6px; font-weight: 400; }
 
-/* Alert badges */
-.badge-verde    { background:#00ffcc22; color:#00ffcc; border:1px solid #00ffcc44;
-                  padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:600; }
-.badge-amarelo  { background:#ffaa0022; color:#ffaa00; border:1px solid #ffaa0044;
-                  padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:600; }
-.badge-vermelho { background:#ff336622; color:#ff3366; border:1px solid #ff336644;
-                  padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:600; }
+/* Alert badges — cor nunca sozinha, sempre com o texto do nível ao lado */
+.badge-verde    { background:#0ca30c22; color:#3ddc3d; border:1px solid #0ca30c55;
+                  padding:3px 10px; border-radius:4px; font-size:0.78rem; font-weight:600; }
+.badge-amarelo  { background:#fab21922; color:#fab219; border:1px solid #fab21955;
+                  padding:3px 10px; border-radius:4px; font-size:0.78rem; font-weight:600; }
+.badge-vermelho { background:#d03b3b22; color:#e8615f; border:1px solid #d03b3b55;
+                  padding:3px 10px; border-radius:4px; font-size:0.78rem; font-weight:600; }
 
 /* Section titles */
 .section-title {
-    color: #e2e8f0; font-size: 1.1rem; font-weight: 700;
-    border-left: 3px solid #7c3aed; padding-left: 12px;
-    margin: 24px 0 16px 0;
+    color: #e6e9f0; font-size: 0.95rem; font-weight: 600;
+    border-left: 2px solid #3987e5; padding-left: 10px;
+    margin: 22px 0 14px 0;
+    text-transform: uppercase; letter-spacing: 0.4px;
 }
 
 /* Sidebar */
-section[data-testid="stSidebar"] { background-color: #0d0d1a; border-right: 1px solid #1e1e3a; }
+section[data-testid="stSidebar"] { background-color: #131312; border-right: 1px solid rgba(255,255,255,0.10); }
 
 /* Customizing st.info and st.success boxes for readability */
 .stAlert {
-    background-color: #11111d !important;
-    border: 1px solid #1e1e3a !important;
-    color: #f8fafc !important;
+    background-color: #1a1a19 !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    color: #e6e9f0 !important;
+    border-radius: 6px !important;
 }
-.stAlert p { font-size: 0.95rem !important; color: #f8fafc !important; }
+.stAlert p { font-size: 0.9rem !important; color: #e6e9f0 !important; }
 
 /* Improve table readability */
 [data-testid="stTable"] td, [data-testid="stTable"] th {
-    color: #e2e8f0 !important;
-    font-size: 0.9rem !important;
+    color: #c3c2b7 !important;
+    font-size: 0.88rem !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -146,13 +149,13 @@ def carregar_copom():
 # ── Sidebar ───────────────────────────────────────────────────────────
 
 with st.sidebar:
-    st.markdown("### 📊 Shadow FX Terminal")
-    st.markdown("**Motor de Compliance AML**")
+    st.markdown("### Shadow FX Terminal")
+    st.caption("Motor de Compliance AML")
     st.markdown("---")
 
     pagina = st.radio(
         "Navegar",
-        ["🏠 Dashboard", "⚖️ Compliance Scanner", "📈 Análise IRF", "ℹ️ Sobre o Projeto"],
+        ["Dashboard", "Compliance Scanner", "Análise IRF", "Sobre o Projeto"],
         label_visibility="collapsed",
     )
 
@@ -164,17 +167,17 @@ with st.sidebar:
     st.caption("Britto, P.J. (2026) — OTC Research")
 
     st.markdown("---")
-    with st.expander("📖 Como navegar neste demo"):
+    with st.expander("Como navegar neste demo"):
         st.markdown("""
-**🏠 Dashboard** — visão geral: IRF do dia, quantas transações caíram em cada alerta (VERDE/AMARELO/VERMELHO) e o histórico do índice.
+**Dashboard** — visão geral: IRF do dia, quantas transações caíram em cada alerta (VERDE/AMARELO/VERMELHO) e o histórico do índice.
 
-**⚖️ Compliance Scanner** — simulador: preenche os dados de uma transação e vê o score gerado na hora, com explicação e rascunho de RAS.
+**Compliance Scanner** — simulador: preenche os dados de uma transação e vê o score gerado na hora, com explicação e rascunho de RAS.
 
-**📈 Análise IRF** — decompõe o índice nos 3 sinais que o formam (câmbio, USDT, atas do Copom).
+**Análise IRF** — decompõe o índice nos 3 sinais que o formam (câmbio, USDT, atas do Copom).
 
-**ℹ️ Sobre o Projeto** — a origem, o pivô e as limitações honestas, em texto corrido.
+**Sobre o Projeto** — a origem, o pivô e as limitações honestas, em texto corrido.
 
-⚠️ Este demo público roda só o dashboard, isolado (sem a API FastAPI, sem a Camada 3/LLM ativa). Transações são simuladas; o contexto macroeconômico é dado real.
+Este demo público roda só o dashboard, isolado (sem a API FastAPI, sem a Camada 3/LLM ativa). Transações são simuladas; o contexto macroeconômico é dado real.
         """)
 
 
@@ -184,29 +187,31 @@ df_irf = carregar_irf()
 df_comp = carregar_compliance()
 df_copom = carregar_copom()
 
+# Paleta validada via scripts/validate_palette.js da skill dataviz (status
+# good/warning/critical de references/palette.md; azul = sequential hue,
+# passo 400). Mapeamento: VERDE→good, AMARELO→warning, VERMELHO→critical.
 CORES = {
-    "verde":    "#00ffcc",
-    "amarelo":  "#ffaa00",
-    "vermelho": "#ff4d88", # Um pouco mais vibrante
-    "roxo":     "#8b5cf6", # Mais claro (Violet-500)
-    "azul":     "#60a5fa", # Mais claro (Blue-400)
-    "fundo":    "#0a0a0f",
-    "card":     "#11111d",
-    "texto":    "#f8fafc", # Quase branco
-    "sub":      "#94a3b8", # Slate-400 (mais legível que 8892b0)
+    "verde":    "#0ca30c",
+    "amarelo":  "#fab219",
+    "vermelho": "#d03b3b",
+    "roxo":     "#3987e5",  # renomeado por compatibilidade — é o azul sequential
+    "azul":     "#3987e5",
+    "fundo":    "#0d0d0d",
+    "card":     "#1a1a19",
+    "texto":    "#e6e9f0",
+    "sub":      "#898781",
 }
 
-plt.rcParams.update({
-    "figure.facecolor": CORES["fundo"],
-    "axes.facecolor":   "#0f0f1a",
-    "text.color":       CORES["texto"],
-    "axes.labelcolor":  CORES["texto"],
-    "xtick.color":      CORES["sub"],
-    "ytick.color":      CORES["sub"],
-    "axes.edgecolor":   "#1e1e3a",
-    "grid.color":       "#1e1e3a",
-    "grid.alpha":       0.5,
-})
+PLOTLY_LAYOUT = dict(
+    paper_bgcolor=CORES["card"],
+    plot_bgcolor=CORES["card"],
+    font=dict(family="Inter, sans-serif", color=CORES["texto"], size=12),
+    margin=dict(l=10, r=10, t=30, b=10),
+    hoverlabel=dict(bgcolor=CORES["fundo"], bordercolor="rgba(255,255,255,0.15)",
+                     font=dict(family="Inter, sans-serif", color=CORES["texto"])),
+    legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color=CORES["sub"], size=11)),
+)
+PLOTLY_GRID = dict(gridcolor="#2c2c2a", zerolinecolor="#383835", color=CORES["sub"])
 
 
 # ════════════════════════════════════════════════════════════════════════
@@ -216,7 +221,7 @@ plt.rcParams.update({
 if "Dashboard" in pagina:
     st.markdown("""
     <div class="main-header">
-        <h1>📊 Shadow FX Terminal</h1>
+        <h1>Shadow FX Terminal</h1>
         <p>Motor de Monitoramento de Risco Fiscal e Compliance para Stablecoins no Brasil &nbsp;·&nbsp;
            Baseado nas Resoluções BCB nº 519, 520 e 521 (2026)</p>
     </div>
@@ -292,28 +297,32 @@ if "Dashboard" in pagina:
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Gráfico: IRF Histórico ────────────────────────────────────────
-    st.markdown('<div class="section-title">📈 Índice de Risco Fiscal — Histórico Completo</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Índice de Risco Fiscal — Histórico Completo</div>', unsafe_allow_html=True)
 
-    fig, ax = plt.subplots(figsize=(14, 4))
     x = df_irf.index
     y = df_irf["irf"]
 
-    ax.fill_between(x, y, where=(y >= 70), alpha=0.3, color=CORES["vermelho"], label="Alto Risco (≥70)")
-    ax.fill_between(x, y, where=((y >= 40) & (y < 70)), alpha=0.2, color=CORES["amarelo"])
-    ax.fill_between(x, y, where=(y < 40), alpha=0.2, color=CORES["verde"])
-    ax.plot(x, y, color=CORES["roxo"], linewidth=1.5, alpha=0.9)
-    ax.axhline(70, color=CORES["vermelho"], linestyle="--", linewidth=0.8, alpha=0.6)
-    ax.axhline(40, color=CORES["amarelo"], linestyle="--", linewidth=0.8, alpha=0.6)
-    ax.set_ylabel("IRF (0–100)", fontsize=9)
-    ax.set_ylim(0, 105)
-    ax.grid(True, alpha=0.3)
-    ax.legend(loc="upper left", fontsize=8, facecolor=CORES["card"])
-    fig.tight_layout()
-    st.pyplot(fig)
-    plt.close(fig)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=x, y=y, mode="lines", line=dict(color=CORES["azul"], width=2),
+        name="IRF", fill="tozeroy", fillcolor="rgba(57,135,229,0.12)",
+        hovertemplate="%{x|%d/%m/%Y}<br>IRF: <b>%{y:.1f}</b><extra></extra>",
+    ))
+    fig.add_hline(y=70, line=dict(color=CORES["vermelho"], width=1, dash="dot"),
+                  annotation_text="Alto risco (≥70)", annotation_position="top left",
+                  annotation_font=dict(color=CORES["vermelho"], size=10))
+    fig.add_hline(y=40, line=dict(color=CORES["amarelo"], width=1, dash="dot"),
+                  annotation_text="Moderado (≥40)", annotation_position="top left",
+                  annotation_font=dict(color=CORES["amarelo"], size=10))
+    fig.update_layout(
+        **PLOTLY_LAYOUT, height=340, showlegend=False,
+        yaxis=dict(title="IRF (0–100)", range=[0, 105], **PLOTLY_GRID),
+        xaxis=dict(**PLOTLY_GRID),
+    )
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
     # ── Tabela de alertas VERMELHO ────────────────────────────────────
-    st.markdown('<div class="section-title">🔴 Casos VERMELHO — Ação Imediata</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Casos VERMELHO — Ação Imediata</div>', unsafe_allow_html=True)
 
     df_verm = df_comp[df_comp["alerta_final"] == "VERMELHO"].sort_values("score_final", ascending=False)
     cols_show = [c for c in ["user_id", "tipo_usuario", "valor_brl", "hora",
@@ -331,7 +340,7 @@ if "Dashboard" in pagina:
 elif "Compliance Scanner" in pagina:
     st.markdown("""
     <div class="main-header">
-        <h1>⚖️ Compliance Scanner</h1>
+        <h1>Compliance Scanner</h1>
         <p>Pontue uma transação individualmente pelo pipeline de 3 camadas.</p>
     </div>
     """, unsafe_allow_html=True)
@@ -426,13 +435,13 @@ elif "Compliance Scanner" in pagina:
         explicacao = gerar_explicacao_xai(transacao_series)
         
         st.markdown("---")
-        st.markdown('<div class="section-title">🧠 Explainable AI (XAI) — Justificativa do Motor</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Explainable AI (XAI) — Justificativa do Motor</div>', unsafe_allow_html=True)
         st.info(f"**Análise MLOps:** {explicacao}")
 
         # PM Improvement: Actionability (Rascunho COAF)
         if alerta in ["AMARELO", "VERMELHO"]:
             st.markdown("---")
-            st.markdown('<div class="section-title">📄 Ação Recomendada</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-title">Ação Recomendada</div>', unsafe_allow_html=True)
             with st.expander("Gerar Rascunho de Relatório COAF (RAS)"):
                 rascunho_coaf = gerar_rascunho_coaf(
                     user_id=user_id, valor_brl=valor_brl, wallets_unicas=wallets,
@@ -453,7 +462,7 @@ elif "Compliance Scanner" in pagina:
 elif "Análise IRF" in pagina:
     st.markdown("""
     <div class="main-header">
-        <h1>📈 Análise do Índice de Risco Fiscal</h1>
+        <h1>Análise do Índice de Risco Fiscal</h1>
         <p>Série histórica e decomposição dos 3 sinais: Câmbio · USDT · Copom</p>
     </div>""", unsafe_allow_html=True)
 
@@ -478,41 +487,45 @@ elif "Análise IRF" in pagina:
     col2.metric("IRF Máximo", f"{df_fil['irf'].max():.1f}")
     col3.metric("Dias em Alto Risco (≥70)", f"{(df_fil['irf'] >= 70).sum()}")
 
-    # Gráfico de decomposição dos sinais
+    # Gráfico de decomposição dos sinais — cores categóricas (identidade de série),
+    # nunca as cores de status (verde/amarelo/vermelho), que ficam reservadas pro alerta.
+    COR_CAMBIO, COR_USDT, COR_COPOM = "#d95926", "#199e70", "#9085e9"
+
     if all(c in df_fil.columns for c in ["sinal_cambio", "sinal_usdt", "sinal_copom"]):
-        fig, axes = plt.subplots(4, 1, figsize=(14, 12), sharex=True)
-        fig.suptitle("Decomposição do IRF — Contribuição de Cada Sinal", fontsize=13, y=0.98)
+        fig = make_subplots(
+            rows=4, cols=1, shared_xaxes=True, vertical_spacing=0.05,
+            subplot_titles=("IRF Composto", "Sinal Câmbio (peso 40%)",
+                             "Sinal USDT (peso 35%)", "Sinal Copom (peso 25%)"),
+        )
+        series = [
+            ("irf", CORES["azul"], "IRF"),
+            ("sinal_cambio", COR_CAMBIO, "Câmbio"),
+            ("sinal_usdt", COR_USDT, "USDT"),
+            ("sinal_copom", COR_COPOM, "Copom"),
+        ]
+        for i, (col, cor, nome) in enumerate(series, start=1):
+            fig.add_trace(go.Scatter(
+                x=df_fil.index, y=df_fil[col], mode="lines", line=dict(color=cor, width=1.6),
+                fill="tozeroy", fillcolor=cor + "1f", name=nome, showlegend=False,
+                hovertemplate="%{x|%d/%m/%Y}<br>" + nome + ": <b>%{y:.2f}</b><extra></extra>",
+            ), row=i, col=1)
+            fig.update_yaxes(title_text="IRF" if i == 1 else "Sinal", row=i, col=1, **PLOTLY_GRID)
+            fig.update_xaxes(row=i, col=1, **PLOTLY_GRID)
 
-        axes[0].plot(df_fil.index, df_fil["irf"], color=CORES["roxo"], linewidth=1.5)
-        axes[0].fill_between(df_fil.index, df_fil["irf"], alpha=0.2, color=CORES["roxo"])
-        axes[0].set_ylabel("IRF (0–100)")
-        axes[0].set_title("IRF Composto", fontsize=10, loc="left")
-
-        for ax, col, cor, titulo in zip(
-            axes[1:],
-            ["sinal_cambio", "sinal_usdt", "sinal_copom"],
-            [CORES["amarelo"], CORES["verde"], CORES["azul"]],
-            ["Sinal Câmbio (peso 40%)", "Sinal USDT (peso 35%)", "Sinal Copom (peso 25%)"]
-        ):
-            ax.plot(df_fil.index, df_fil[col], color=cor, linewidth=1.2)
-            ax.fill_between(df_fil.index, df_fil[col], alpha=0.15, color=cor)
-            ax.set_ylabel("Sinal (0–1)")
-            ax.set_title(titulo, fontsize=10, loc="left")
-            ax.grid(True, alpha=0.3)
-
-        fig.tight_layout()
-        st.pyplot(fig)
-        plt.close(fig)
+        fig.update_layout(**PLOTLY_LAYOUT, height=680, showlegend=False)
+        for ann in fig.layout.annotations:
+            ann.font = dict(color=CORES["texto"], size=12)
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
     else:
         # Só o IRF
-        fig, ax = plt.subplots(figsize=(14, 4))
-        ax.plot(df_fil.index, df_fil["irf"], color=CORES["roxo"], linewidth=1.5)
-        ax.fill_between(df_fil.index, df_fil["irf"], alpha=0.2, color=CORES["roxo"])
-        ax.set_ylabel("IRF (0–100)")
-        ax.grid(True, alpha=0.3)
-        fig.tight_layout()
-        st.pyplot(fig)
-        plt.close(fig)
+        fig = go.Figure(go.Scatter(
+            x=df_fil.index, y=df_fil["irf"], mode="lines", line=dict(color=CORES["azul"], width=2),
+            fill="tozeroy", fillcolor="rgba(57,135,229,0.12)",
+            hovertemplate="%{x|%d/%m/%Y}<br>IRF: <b>%{y:.1f}</b><extra></extra>",
+        ))
+        fig.update_layout(**PLOTLY_LAYOUT, height=340, showlegend=False,
+                           yaxis=dict(title="IRF (0–100)", **PLOTLY_GRID), xaxis=dict(**PLOTLY_GRID))
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
     # Tabela por semestre
     st.markdown('<div class="section-title">IRF Médio por Semestre</div>', unsafe_allow_html=True)
@@ -533,7 +546,7 @@ elif "Análise IRF" in pagina:
 elif "Sobre" in pagina:
     st.markdown("""
     <div class="main-header">
-        <h1>ℹ️ Sobre o Shadow FX Terminal</h1>
+        <h1>Sobre o Shadow FX Terminal</h1>
         <p>Da análise do paper à solução de compliance — a história do projeto</p>
     </div>""", unsafe_allow_html=True)
 
