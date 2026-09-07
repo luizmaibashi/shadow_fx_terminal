@@ -38,6 +38,28 @@ def _registros(df: pd.DataFrame, colunas: list[str]) -> list[dict[str, Any]]:
     ]
 
 
+def indicador_divida_bruta(irf: pd.DataFrame) -> dict[str, Any]:
+    """Expõe nível e tendência anual sem reutilizar a variação diária do IRF."""
+    if "divida_bruta_pib" not in irf.columns:
+        return {"nivel_pib": None, "variacao_12m_pp": None, "data_referencia": None}
+
+    serie = irf[["date", "divida_bruta_pib"]].dropna().sort_values("date")
+    if serie.empty:
+        return {"nivel_pib": None, "variacao_12m_pp": None, "data_referencia": None}
+
+    atual = serie.iloc[-1]
+    alvo = atual["date"] - pd.DateOffset(months=12)
+    historico = serie[serie["date"] <= alvo]
+    anterior = historico.iloc[-1] if not historico.empty else None
+
+    return {
+        "nivel_pib": _json(atual["divida_bruta_pib"]),
+        "variacao_12m_pp": _json(atual["divida_bruta_pib"] - anterior["divida_bruta_pib"]) if anterior is not None else None,
+        "data_referencia": _json(atual["date"]),
+        "data_base_12m": _json(anterior["date"]) if anterior is not None else None,
+    }
+
+
 def encontrar_diretorio_dados(raiz: Path = ROOT) -> Path:
     """Prefere o pipeline local; no clone público usa o snapshot do Space."""
     candidatos = (raiz / "data", raiz / "deploy" / "hf_space" / "data")
@@ -79,6 +101,7 @@ def construir_snapshot(dados: Path) -> dict[str, Any]:
                 ["date", coluna_irf, "brl_adj_dxy_30d", "ipca_desvio_meta", "variacao_usdt_30d", "divida_pib_var", "ibc_br_var", "score_copom"],
             ),
         },
+        "divida_bruta": indicador_divida_bruta(irf),
         "alertas_vermelhos": _registros(
             vermelhos,
             ["user_id", "tipo_usuario", "timestamp", "valor_brl", "wallets_unicas", "c1_razoes", "score_final", "explicacao_xai"],
