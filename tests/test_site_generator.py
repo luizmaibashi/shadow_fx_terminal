@@ -74,6 +74,20 @@ def test_contrato_reduz_dados_e_preserva_metricas(tmp_path: Path):
     assert len(snapshot["alertas_vermelhos"]) == 1
     assert "wallet_destino" not in snapshot["alertas_vermelhos"][0]
     assert snapshot["metadados"]["versao_irf"] == "v2"
+    assert snapshot["irf"]["serie"][-1]["divida_bruta_pib"] == 87.0
+
+
+def test_template_expoe_historia_e_grafico_acessivel():
+    html = (ROOT / "scripts" / "site" / "template.html").read_text(encoding="utf-8")
+
+    assert 'id="chart-tooltip"' in html
+    assert 'aria-describedby="chart-help"' in html
+    assert 'tabindex="0"' in html
+    assert "pointermove" in html
+    assert "keydown" in html
+    assert "Fundamentos fiscais" in html
+    assert "Pressão e resposta monetária" in html
+    assert "Reação do mercado" in html
 
 
 def test_contrato_expoe_nivel_e_variacao_anual_da_divida_em_pontos_percentuais(tmp_path: Path):

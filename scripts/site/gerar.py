@@ -98,7 +98,7 @@ def construir_snapshot(dados: Path) -> dict[str, Any]:
             "atual": {"data": _json(atual["date"]), "valor": _json(atual[coluna_irf])},
             "serie": _registros(
                 irf,
-                ["date", coluna_irf, "brl_adj_dxy_30d", "ipca_desvio_meta", "variacao_usdt_30d", "divida_pib_var", "ibc_br_var", "score_copom"],
+                ["date", coluna_irf, "brl_adj_dxy_30d", "ipca_desvio_meta", "variacao_usdt_30d", "divida_pib_var", "divida_bruta_pib", "ibc_br_var", "score_copom"],
             ),
         },
         "divida_bruta": indicador_divida_bruta(irf),
