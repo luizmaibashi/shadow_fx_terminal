@@ -2,6 +2,8 @@
 
 Pipeline de compliance AML pra stablecoin, com contexto macroeconômico (IRF) injetado no modelo.
 
+> **Código não-trivial em `src/` (produção) ou que toca dado real** → aplicar `spec-governance` da base (`Base_de_Conhecimento/.claude/skills/spec-governance/SKILL.md`).
+
 **Stack:** Python, Pandas, Scikit-Learn, FastAPI, Streamlit, Gemini 2.5 Flash
 Atualizado em 2026-08-11 via `/grill-with-docs` (Blind Spot Pass + sabatina), depois de `/tese` e `/wayfinder` na mesma linha de trabalho. A versão original foi preservada em espírito; as seções novas estão marcadas.
 
