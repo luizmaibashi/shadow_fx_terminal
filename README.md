@@ -15,7 +15,7 @@ Quer entender o raciocínio de negócio primeiro? Vá pro [PROBLEM.md](PROBLEM.m
 [![CI](https://github.com/luizmaibashi/shadow_fx_terminal/actions/workflows/ci.yml/badge.svg)](https://github.com/luizmaibashi/shadow_fx_terminal/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-2E6F68)
-![Testes](https://img.shields.io/badge/testes-55%20no%20CI%20%2B%209%20locais-2E6F68)
+![Testes](https://img.shields.io/badge/testes-71%20%289%20exigem%20dados%20locais%29-2E6F68)
 
 ---
 
@@ -64,7 +64,7 @@ python src/pipeline_compliance.py         # classifica em VERDE/AMARELO/VERMELHO
 streamlit run app.py                      # http://localhost:8501
 
 # 6. Rode os testes
-pytest tests/ -v --cov=src                # 67 testes + coverage
+pytest tests/ -v --cov=src                # 71 testes + coverage
                                            # (9 pulam sem data/ e models/ locais: 5 de integracao
                                            #  + 4 de smoke do dashboard, ver tests/test_app_smoke.py)
 ```
@@ -257,7 +257,8 @@ shadow_fx_terminal/
 │   ├── test_utils.py              ← 33 testes
 │   ├── test_pipeline_compliance.py ← 22 testes
 │   ├── test_agente_rag.py          ← 5 testes
-│   └── test_app_smoke.py           ← 4 testes (dashboard, 64 no total)
+│   ├── test_site_generator.py      ← 7 testes
+│   └── test_app_smoke.py           ← 4 testes (dashboard; 71 no total)
 │
 └── reports/                      ← visualizações geradas
 ```
@@ -300,7 +301,7 @@ python src/gerador_transacoes_mock.py   # gera 4.509 transações (3 perfis)
 python src/pipeline_compliance.py       # 3 camadas → resultado_compliance.csv
 
 # 6. rodar os testes
-python -m pytest tests/ -v              # 64 testes, 4 arquivos
+python -m pytest tests/ -v              # 71 testes, 5 arquivos
                                          # (9 pulam sem data/raw/, data/processed/ e models/ locais,
                                          #  55 rodam no CI, que não gera esses artefatos)
 ```
@@ -456,7 +457,7 @@ uvicorn src.api:app --reload --port 8000
 
 **O diferencial: IRF como feature contextual.** A maioria dos sistemas de AML olha só o comportamento individual. Aqui o IRF entra como feature do modelo: R$ 8.000 de USDT num dia normal e R$ 8.000 num dia em que o real perdeu 5% são padrões diferentes.
 
-**Filtros em cascata (Stanford CS230).** Cada camada resolve os casos óbvios e passa o difícil pra camada seguinte, mais cara. Isso reduz o custo de inferência em cerca de 85% frente a rodar o LLM em tudo.
+**Filtros em cascata (Stanford CS230).** Cada camada resolve os casos óbvios e passa o difícil pra camada seguinte, mais cara. Isso reduz o custo de inferência frente a rodar o LLM em tudo, porque ele só roda no resíduo que as duas primeiras camadas não resolvem. O percentual de economia não foi medido.
 
 ---
 

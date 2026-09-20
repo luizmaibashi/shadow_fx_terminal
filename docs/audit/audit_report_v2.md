@@ -1,4 +1,6 @@
 # Relatório de Auditoria Multidisciplinar (v2) — Shadow FX Terminal
+
+> **Documento histórico (auditoria de 17/05/2026).** Descreve o estado do projeto em maio e foi superado. Os números de correlação abaixo (por exemplo r = +0,504 e r = +0,521) e o selo "ENTERPRISE-READY (100% Validado)" **não refletem o estado atual**: o README foi reconciliado com a metodologia em 11/08/2026. Para os números vigentes, use `README.md`, `PROBLEM.md` e `reports/dicionario_foxbit_brl.md`. Este arquivo fica preservado como registro do que foi afirmado na época.
 **Data da Auditoria:** 17 de Maio de 2026  
 **Status do Projeto:**  ENTERPRISE-READY (100% Validado)
 
