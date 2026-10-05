@@ -95,6 +95,8 @@ A seção anterior descreve o que o IRF deveria fazer: distinguir Cidadão A de 
 | Recall (dos fraudadores reais, % detectado) | 34,4% | 49,9% |
 | Falso positivo (poupador legítimo flagado à toa) | 1,5% | 5,0% (2,3x a 3,5x conforme a rodada de calibração) |
 
+Base: as 4.509 transações sintéticas do gerador. Os números são pontuais, sem intervalo de confiança, e a ablação que os gerou não está versionada no repositório.
+
 O que isso significa, sem retórica: o IRF pega mais fracionador de verdade, mas em troca incomoda mais o Cidadão A — o poupador assustado que o projeto existe pra proteger. Isso não invalida o projeto — a tese sobreviveu ao teste de falsificação nas 3 versões testadas, precisão e recall sempre melhoraram, não é ruído — mas é uma tensão real entre os dois objetivos da Pergunta 2, não uma solução que resolve os dois sem custo. O multiplicador exato do falso positivo (2,3x a 3,5x) se moveu a cada bug de calibração corrigido, então é reportado como faixa, não número fixo — é a leitura honesta (ver `TESE.md`, adendo 2).
 
 Decisão registrada: aceitar o trade-off como está e documentá-lo, sem tunar o modelo pra reduzir o falso positivo, porque o dataset é sintético — otimizar em cima dele arrisca ajustar pra um ruído que não existe em produção real. Ver `docs/wayfinder/tese-veredito-condicoes/0001-tunar-ou-aceitar-trade-off.md`.
@@ -124,7 +126,7 @@ A ressalva que fica, com honestidade: essa tese é bem fundamentada em fato púb
 | Stakeholder | Problema resolvido | Valor gerado |
 |---|---|---|
 | Corretoras de cripto | Falso positivo bloqueando cliente legítimo | Contexto reduz falso positivo frente a regra fixa incondicional, mas não zera — reduz relativo ao modelo sem IRF (ver trade-off acima). Reduz fadiga do analista via priorização, não elimina revisão humana |
-| Bancos e fintechs | Compliance cego ao contexto macroeconômico | Sistema de AML que pondera crise vs. crime, com precisão medida, não hipotética (44,8% vs. 35,9%) |
+| Bancos e fintechs | Compliance cego ao contexto macroeconômico | Sistema de AML que pondera crise vs. crime, com precisão medida em dado sintético (44,8% vs. 35,9%) |
 | Reguladores (BCB/COAF) | Excesso de reporte de baixa qualidade escondendo os reais | Reporte mais preciso, com rascunho automatizado via LLM |
 | Mercado de dados | Validação independente do paper de Britto (2026) | Evidência econométrica com cadeia de 5 provas convergentes |
 

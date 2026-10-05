@@ -148,7 +148,7 @@ brasileiro assustado com o câmbio em R$ 6,30 é bloqueado.
 
 A ideia central do Shadow FX Terminal é simples: injetar o contexto macroeconômico como variável do modelo. Um brasileiro que compra R$ 8.000 de USDT num dia qualquer e outro que compra o mesmo valor no dia em que o Real perdeu 4% e o IRF está em 87/100 não são o mesmo evento estatístico. O primeiro é estranho; o segundo é esperado. Regra fixa não enxerga essa diferença. Um modelo que sabe o estado do câmbio, a trajetória da dívida, o tom do último Copom e a busca por USDT no Brasil, enxerga.
 
-Em termos regulatórios: o IRF melhora a precisão dos reportes ao COAF (medido: 35,9% → 44,8%) frente a um modelo sem contexto macro. Não garante zero exclusão de gente legítima: o mesmo contexto que ajuda a pegar mais fracionador também aumenta o falso positivo em poupador legítimo, entre 2,3x e 3,5x conforme a rodada de calibração (ver seção de Resultados). É uma melhora mensurável, não uma solução sem custo.
+Em termos regulatórios: o IRF melhora a precisão dos reportes ao COAF (medido em 4.509 transações sintéticas: 35,9% → 44,8%, sem intervalo de confiança) frente a um modelo sem contexto macro. Não garante zero exclusão de gente legítima: o mesmo contexto que ajuda a pegar mais fracionador também aumenta o falso positivo em poupador legítimo, entre 2,3x e 3,5x conforme a rodada de calibração (ver seção de Resultados). É uma melhora mensurável, não uma solução sem custo.
 
 ---
 
