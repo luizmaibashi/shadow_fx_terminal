@@ -23,7 +23,7 @@ O ponto de operação é escolhido por uma regra de Neyman-Pearson com restriç�
 > 1. **Teto de dano X = 5%**: no máximo 5% dos poupadores com pelo menos 1 alerta.
 > 2. **Capacidade K**: no máximo K alertas por 100 transações. **Inativa no gerador v1** (`K=None`). Liga com o gerador v2 (ADR-0011, prevalência realista) e é calibrada com números reais na Fase 5.
 
-Implementação: `escolher_limiar_operacao(df, score_col, x_max=0.05, k_max=None)` varre os limiares candidatos (valores únicos do score) e devolve o menor limiar que respeita as restrições com o maior recall por usuário. Se nenhum limiar respeita X, devolve `None`, e o degrau fica desligado. Isso é resultado, não erro.
+Implementação: `escolher_limiar_operacao(df, score_col, x_max=0.05, k_max=None)` varre os limiares candidatos (valores únicos do score) e, entre os que respeitam as restrições, fica com os de maior recall por usuário. Em caso de empate, devolve o **maior** limiar: com o mesmo recall, ele gera menos alertas e incomoda menos poupadores. Se nenhum limiar respeita X, devolve `None`, e o degrau fica desligado. Isso é resultado, não erro.
 
 **Anti-vazamento:** o limiar é escolhido em metade dos usuários (split por usuário, estratificado por `tipo_usuario`, seed fixa) e reportado na outra metade, com IC de Wilson. Escolher e medir no mesmo dado infla o resultado.
 
