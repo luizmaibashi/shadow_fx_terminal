@@ -183,3 +183,13 @@ Conferido no mestre local (`carregar_dataset_mestre`): desde 2024 ele tem **só 
    - 4 dias seguidos sem observação (datas observadas a 5 dias de distância, como o feriado real) passam; 5 ou mais dias seguidos sem observação (distância ≥ 6) levantam erro;
    - o fim nunca passa da última observação;
    - nenhum valor anterior à primeira observação é preenchido.
+
+### 8.5 Quartil superior do IRF (dia de estresse)
+
+O corte usa **dias únicos**, e não transações. Mais que isso: usa os **dias corridos do período efetivo** (§8.4), com o `irf_contexto` que o pipeline atribui a cada dia, ou seja, com `IRF_LAG_DAYS`.
+
+O motivo: no v2, o poupador compra mais justamente nos dias de IRF alto. Um quantil por transação, ou só sobre os dias com compra, faria a definição de "dia de estresse" depender do comportamento que estamos medindo, e o corte mudaria entre o v2 e o placebo. O dia de estresse precisa ser definido só pelo macro, e ser **idêntico nos dois mundos**.
+
+Isso não vaza nada. O IRF é público e não é feature do rótulo: o corte só define o estrato onde a condição C é medida.
+
+Teste: o limiar do quartil é o mesmo para v2 e placebo gerados com a mesma série de IRF. Grave o limiar e o número de dias de estresse no JSON.
