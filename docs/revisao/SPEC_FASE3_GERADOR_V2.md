@@ -164,3 +164,22 @@ O Codex confirmou que a SGS 4537 é a "Dívida bruta do governo geral (% PIB) �
 - Registre o motivo da troca em uma linha do `AGENTS.md`, na seção de fontes macro.
 - **Não rode a coleta com rede no teste.** Se tiver rede, rode `coletar_dados.py` e `recalcular_irf.py` uma vez, sem commitar `data/`, e informe o primeiro e o último valor da série nova.
 - Se não achar uma série vigente com o nome confirmado, **pare e reporte**. Não troque por palpite.
+
+### 8.4 Calendário do IRF × calendário diário do gerador (2026-10-23)
+
+Conferido no mestre local (`carregar_dataset_mestre`): desde 2024 ele tem **só dias úteis**, com 387 dias de 2024-01-01 a **2025-06-27**. Os buracos são fins de semana (3 dias) e um feriado longo (5 dias). O IRF herda esse calendário. Não é um dado faltando: é o mercado fechado.
+
+**Regra:**
+1. **A saída de `recalcular_irf.py` não muda.** A expansão acontece dentro do gerador, numa função própria (`irf_calendario_diario(irf, inicio, fim, max_gap_dias=4)`), coberta por teste.
+2. **Dia sem observação recebe o último IRF observado (`ffill`).** É o que estava disponível naquele dia, a mesma semântica do `asof` do pipeline. Nunca use `bfill` nem interpolação.
+3. **Limite:** no máximo 4 dias corridos seguidos preenchidos, o que cobre o feriado longo. Um buraco maior levanta `ValueError`, que é a falha visível de dado faltando de verdade.
+4. **Período efetivo:**
+   - início = max(2024-01-01, primeira data com IRF não nulo);
+   - fim = **min(2025-06-30, última data com IRF)**.
+
+   Nada é estendido além da última observação. No dado local, o fim é 27/06/2025. Registre o período efetivo na saída do gerador e no JSON da medição.
+5. **Testes novos:**
+   - um IRF só de dias úteis vira diário, com sábado e domingo iguais à sexta;
+   - um buraco de 5 dias corridos ou mais levanta erro;
+   - o fim nunca passa da última observação;
+   - nenhum valor anterior à primeira observação é preenchido.
