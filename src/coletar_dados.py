@@ -257,14 +257,6 @@ def coletar_macro_bcb() -> pd.DataFrame | None:
     df_macro = pd.concat(frames.values(), axis=1).sort_index()
     df_macro.index.name = "date"
 
-    # Interpolar para serie diaria (dados mensais)
-    df_macro = df_macro.resample("D").interpolate(method="time")
-
-    # Feature derivada: desvio da inflacao em relacao a meta de 3%
-    if "ipca_mensal" in df_macro.columns:
-        df_macro["ipca_acum_12m"] = df_macro["ipca_mensal"].rolling(12).sum()
-        df_macro["desvio_meta_ipca"] = df_macro["ipca_acum_12m"] - 3.0
-
     out = DATA_RAW / "macro_bcb.csv"
     df_macro.to_csv(out)
     print(f"    OK: Macro BCB salvo -> {out.name}")

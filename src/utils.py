@@ -54,13 +54,10 @@ FEATURES_ML = [
 #   - wallets_unicas  (camada1_filtros_bcb, pipeline_compliance.py): CONTAGEM de wallets
 #     distintas POR DIA. Usada na regra R3 e no XAI. Escopo: 1 usuario, 1 dia.
 #   - entropia_wallets (engenharia_features, pipeline_compliance.py): DISPERSAO estatistica
-#     de wallets no HISTORICO INTEIRO do usuario no dataset. Usada como feature de ML (acima).
-#     Escopo: 1 usuario, todo o periodo simulado — nao e por dia.
+#     de wallets no historico do usuario ate o fim do dia da transacao (lote D+1).
 
-# Lag de seguranca para evitar data leakage no IRF:
-# Macrovariaveis (IPCA, Selic, Divida/PIB) sao publicadas com semanas de atraso.
-# Usar IRF[t] no dia exato da transacao pode incluir info que nao era conhecida.
-# IRF_LAG_DAYS = 14 significa: para uma transacao em T, usamos IRF de T-14.
+# Atraso de publicacao do macro tratado por macro_disponibilidade.py.
+# IRF_LAG_DAYS = 14 conserva uma margem extra: transacao em T usa IRF de T-14.
 IRF_LAG_DAYS = 14
 
 
@@ -352,14 +349,19 @@ def carregar_dataset_mestre() -> pd.DataFrame:
     for nome, arquivo, colunas in [
         ("global",   "variaveis_globais.csv",       ["dxy", "vix", "dxy_var_30d"]),
         ("brl_adj",  "brl_ajustado_dxy.csv",         ["brl_adj_dxy_30d", "brl_usd_var_30d"]),
-        ("macro",    "macro_bcb.csv",                ["ipca_mensal", "selic_meta", "ibc_br",
-                                                      "divida_bruta_pib", "desvio_meta_ipca"]),
+        ("macro",    "macro_bcb.csv",                []),
     ]:
         path = DATA_RAW / arquivo
         if path.exists():
             df_temp = pd.read_csv(path, index_col="date", parse_dates=True)
-            cols_disponiveis = [c for c in colunas if c in df_temp.columns]
-            dfs_opcionais[nome] = df_temp[cols_disponiveis]
+            if nome == "macro":
+                from macro_disponibilidade import mensal_de_diaria, derivar_mensais, para_diaria_sem_lookahead
+                mensal = mensal_de_diaria(df_temp)
+                df_temp = para_diaria_sem_lookahead(derivar_mensais(mensal), df_cambio.index)
+                dfs_opcionais[nome] = df_temp
+            else:
+                cols_disponiveis = [c for c in colunas if c in df_temp.columns]
+                dfs_opcionais[nome] = df_temp[cols_disponiveis]
 
     # --- Merge ---
     cols_stable = [
