@@ -21,6 +21,7 @@ from medir_escada import (  # noqa: E402
     medir_degrau,
     medir_ml_alem_da_regra,
     medir_por_usuario,
+    medir_cascata,
     wilson,
 )
 
@@ -84,3 +85,14 @@ class TestNumerosPublicados:
     def test_irf_igual_entre_classes(self, df):
         _, _, p = irf_por_classe(df)
         assert p > 0.05
+
+    def test_cascata_avaliada_fora_da_calibracao(self, df):
+        limiar, tx, usr, extra = medir_cascata(df)
+        assert limiar == 98.7
+        assert tx == {"precisao": (693, 710), "recall": (693, 694),
+                      "fp_legitimos": (17, 1597)}
+        assert usr == {"precisao": (5, 12), "recall": (5, 5),
+                       "fp_legitimos": (7, 57), "poupadores_tocados": (0, 50)}
+        assert extra == {"zona_cinza_transacoes_C3": (688, 2291),
+                         "zona_cinza_usuarios": (12, 62),
+                         "fraudes_novas_por_100_cinza": (0, 688)}

@@ -14,6 +14,8 @@ Execute: python src/medir_escada.py [caminho_do_csv]
 """
 
 import sys
+import json
+from datetime import date
 from math import sqrt
 from pathlib import Path
 
@@ -114,7 +116,69 @@ def irf_por_classe(df: pd.DataFrame) -> tuple[pd.Series, float, float]:
     return medias, float(ks.statistic), float(ks.pvalue)
 
 
-def main(caminho: Path) -> None:
+def medir_cascata(df: pd.DataFrame) -> tuple[float | None, dict[str, tuple[int, int]], dict[str, tuple[int, int]], dict[str, tuple[int, int]]]:
+    """Calibra em usuários distintos e mede somente no lado de avaliação."""
+    from decisao import escolher_limiar_operacao, split_por_usuario
+    from pipeline_compliance import decisao_cascata
+
+    calibracao, avaliacao = split_por_usuario(df, seed=42)
+    limiar = escolher_limiar_operacao(df, usuarios=calibracao)
+    teste = df.loc[df["user_id"].isin(avaliacao)].copy()
+    teste["c1_suspeita"] = teste["c1_razoes"].fillna("").str.contains(r"(?:^|\|)R[3456]:")
+    teste = decisao_cascata(teste, limiar)
+    alerta = teste["alerta_final"] != "VERDE"
+    tx = medir_degrau(teste, alerta)
+    usuarios = teste.assign(alerta=alerta).groupby("user_id").agg(
+        fraude=("fraude", "max"), alerta=("alerta", "max"),
+        tipo=("tipo_usuario", "first"), cinza=("zona_cinza", "max"),
+    )
+    fraude_u = usuarios["fraude"]
+    alerta_u = usuarios["alerta"]
+    poupador_u = usuarios["tipo"].str.startswith("A_")
+    usr = {
+        "precisao": (int((alerta_u & fraude_u).sum()), int(alerta_u.sum())),
+        "recall": (int((alerta_u & fraude_u).sum()), int(fraude_u.sum())),
+        "fp_legitimos": (int((alerta_u & ~fraude_u).sum()), int((~fraude_u).sum())),
+        "poupadores_tocados": (int((alerta_u & poupador_u).sum()), int(poupador_u.sum())),
+    }
+    so_cascata = teste["fraude"] & ~teste["c1_suspeita"] & teste["c2_positivo"]
+    extra = {
+        "zona_cinza_transacoes_C3": (int(teste["zona_cinza"].sum()), len(teste)),
+        "zona_cinza_usuarios": (int(usuarios["cinza"].sum()), len(usuarios)),
+        "fraudes_novas_por_100_cinza": (int(so_cascata.sum()), int(teste["zona_cinza"].sum())),
+    }
+    return limiar, tx, usr, extra
+
+
+def imprimir_cascata(df: pd.DataFrame, salvar_limiar: bool = False) -> None:
+    from decisao import limiar_por_custo, split_por_usuario
+
+    calibracao, _ = split_por_usuario(df, seed=42)
+    limiar, tx, usr, extra = medir_cascata(df)
+    print("\n== Cascata (ADR-0009; avaliação fora da calibração) ==")
+    if limiar is None:
+        print("Limiar: nenhum — degrau C2 desligado pelo ADR-0008")
+    else:
+        print(f"Limiar escolhido no lado de calibração: {limiar:.1f}")
+    for razao in (1, 10, 50):
+        custo = limiar_por_custo(df, "c2_score_anomalia", razao, usuarios=calibracao)
+        print(f"Limiar por custo FN:FP {razao}:1 (sensibilidade): {custo:.1f}")
+    print("Cascata (ADR-0009) — transações, IC Wilson 95%:")
+    for nome, (k, n) in tx.items():
+        print(f"  {nome:<25} {fmt(k, n)}")
+    print("Cascata (ADR-0009) — usuários, IC Wilson 95%:")
+    for nome, (k, n) in usr.items():
+        print(f"  {nome:<25} {fmt(k, n)}")
+    for nome, (k, n) in extra.items():
+        print(f"  {nome:<25} {fmt(k, n)}")
+    if salvar_limiar:
+        caminho = Path(__file__).resolve().parent.parent / "models" / "limiar_operacao.json"
+        caminho.write_text(json.dumps({"limiar": limiar, "x_max": 0.05,
+                                       "k_max": None, "data": date.today().isoformat()}, indent=2), encoding="utf-8")
+        print(f"Limiar salvo em {caminho}")
+
+
+def main(caminho: Path, salvar_limiar: bool = False) -> None:
     df = carregar(caminho)
     n_users = df.groupby("tipo_usuario")["user_id"].nunique().to_dict()
     print(f"Fonte: {caminho}")
@@ -144,7 +208,10 @@ def main(caminho: Path) -> None:
     print("\n== IRF por classe (se for igual, o dado nao testa a tese) ==")
     print(medias.to_string())
     print(f"KS poupador x fracionador: D={d:.3f}, p={p:.2f}")
+    imprimir_cascata(df, salvar_limiar=salvar_limiar)
 
 
 if __name__ == "__main__":
-    main(Path(sys.argv[1]) if len(sys.argv) > 1 else CSV_PADRAO)
+    salvar = "--salvar-limiar" in sys.argv[1:]
+    caminhos = [arg for arg in sys.argv[1:] if arg != "--salvar-limiar"]
+    main(Path(caminhos[0]) if caminhos else CSV_PADRAO, salvar_limiar=salvar)
