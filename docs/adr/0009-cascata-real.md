@@ -1,4 +1,4 @@
-# ADR-0009: Cascata real (reporte separado de suspeita, cinza por discordância)
+# ADR-0009: Cascata real (reporte separado de suspeita, C3 só onde o modelo acusa sem regra)
 
 **Data:** 2026-10-23
 **Status:** Accepted
@@ -28,23 +28,26 @@ A cascata do `PROBLEM.md` ("C1 libera o verde, C2 vê o resto, C3 julga a zona c
 |---|---|---|---|
 | sim | sim | concordam: suspeito | VERMELHO |
 | não | não | concordam: liberado | VERDE |
-| sim | não | discordam: zona cinza | AMARELO (vai a C3) |
-| não | sim | discordam: zona cinza | AMARELO (vai a C3) |
+| sim | não | regra acusa com motivo explícito | AMARELO (fila humana, **sem C3**) |
+| não | sim | só o modelo acusa, sem motivo explícito: zona cinza | AMARELO (vai a C3) |
 
-5. **C3 só roda na zona cinza.** Enquanto o ADR-0010 (papel do juiz) não for aceito, `c3_veredito` **não muda** `alerta_final`. O caso cinza vai para a fila humana. O LLM pode preencher o rascunho, mas não decide.
+5. **C3 só roda na zona cinza, que é `c2_positivo & ~c1_suspeita`.** Quando a regra acusa, ela já traz o motivo legível (R3-R6), e o analista não precisa do LLM para saber por que o caso está na fila. O LLM só agrega onde o único sinal é um score sem explicação. Enquanto o ADR-0010 (papel do juiz) não for aceito, `c3_veredito` **não muda** `alerta_final`: o caso cinza vai para a fila humana, e o LLM pode preencher o rascunho, mas não decide.
+
+   *Revisado em 2026-10-23, depois da primeira medição.* A versão anterior mandava ao C3 toda discordância, nos dois sentidos. No snapshot (metade de avaliação), o limiar escolhido pelo ADR-0008 foi 98,7. Com isso, 676 dos 688 casos cinza eram "regra sim, modelo não", e a cascata mandava mais casos ao LLM (688) do que a faixa antiga de 40-70 (620). Ou seja: quando o modelo está quase desligado, a discordância nos dois sentidos vira "toda regra acionada vai ao LLM"
 6. **`score_final` passa a ser só prioridade de fila** dentro de cada cor. Os buckets por `score_final` deixam de definir a cor.
 
 ## Consequências
 
 **Positivas**
 - O institucional legítimo deixa de virar alerta só por valor, porque o reporte vai para outro canal. O FP em legítimos deve cair muito em relação aos 25,2% atuais.
-- O custo do LLM passa a ser proporcional à discordância, não a uma faixa arbitrária de score.
+- O custo do LLM passa a ser proporcional aos casos sem motivo explícito, não a uma faixa arbitrária de score. Pelo snapshot da primeira medição, a estimativa é de 688 para cerca de 12 chamadas na metade de avaliação.
 - A pergunta "cada degrau se paga?" fica mensurável: fracionadores novos por 100 casos cinza.
 
 **Negativas**
-- No gerador v1, a regra pega quase tudo, então a zona cinza vai ser formada quase só por "regra sim, modelo não". O resultado esperado é que o C3 não acrescente nada. Isso confirma o diagnóstico de circularidade, e o teste real fica para o v2.
+- No gerador v1, a regra pega quase tudo, e o C3 deve receber poucos casos e não acrescentar nada. Isso confirma o diagnóstico de circularidade, e o teste real fica para o v2.
+- A discordância "regra sim, modelo não" não passa por nenhum degrau extra. Se a regra tiver falso positivo sistemático (no snapshot, institucional de madrugada via R5), quem filtra é o analista humano, não o LLM.
 - A cor muda de significado. O `AGENTS.md` (glossário VERDE/AMARELO/VERMELHO), o `app.py`, a API, `deploy/hf_space/` e o site precisam ser alinhados. **Na Fase 2 só o pipeline e a medição mudam.** O snapshot público continua congelado e fica registrado como débito até ser regenerado.
-- Um poupador com R1/R2 e modelo positivo ainda cai na zona cinza. Isso é aceito: é discordância legítima.
+- Um poupador com R1/R2 e modelo positivo ainda cai na zona cinza. Isso é aceito: é um caso em que só o modelo acusa.
 
 ## Alternativas descartadas
 
@@ -53,6 +56,7 @@ A cascata do `PROBLEM.md` ("C1 libera o verde, C2 vê o resto, C3 julga a zona c
 | C2 só no que C1 flagou (o desenho original) | Mais barato no papel | Cegueira estrutural para fraude fora da regra, e o custo do C2 é ~0 |
 | Estreitar a faixa 40-70 no olho (50-70, 60-70) | Mudança de uma linha | Troca um número arbitrário por outro (revisão §2.4) |
 | Manter R1/R2 dentro de `c1_flag` como suspeita | Sem mudança de schema | R1/R2 é obrigação de reporte e gera 2.030 alarmes falsos |
+| C3 em toda discordância (regra XOR modelo) | Simétrico | Medido: com o modelo quase desligado, manda ao LLM toda regra acionada (688 contra 620 da faixa antiga) |
 | Fazer `c3_veredito` decidir já | Fecha a cascata | O juiz nunca foi avaliado contra gabarito, isso é a Fase 4 e o ADR-0010 |
 
 ## Validação
@@ -60,3 +64,4 @@ A cascata do `PROBLEM.md` ("C1 libera o verde, C2 vê o resto, C3 julga a zona c
 - Teste unitário de `decisao_cascata` cobrindo as 4 linhas da tabela, e o caso `limiar=None`.
 - Teste de que R1/R2 sozinhos não geram `c1_suspeita`.
 - `src/medir_escada.py` ganha o degrau "cascata (ADR-0009)": precisão, recall, FP por transação e por usuário, tamanho da zona cinza e fracionadores novos por 100 casos cinza.
+- Teste de que "regra sim, modelo não" dá AMARELO com `zona_cinza=False`, e de que nenhuma linha com `c1_suspeita=True` chega ao C3.

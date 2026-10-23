@@ -66,7 +66,7 @@ def decisao_cascata(df, limiar: float | None) -> pd.DataFrame:
 ```
 
 - `c2_positivo = c2_score_anomalia >= limiar`. Se `limiar is None`, é `False` em tudo.
-- `alerta_final`: `c1_suspeita & c2_positivo` → VERMELHO; nenhum dos dois → VERDE; XOR → AMARELO, com `zona_cinza=True`.
+- `alerta_final`: `c1_suspeita & c2_positivo` → VERMELHO; nenhum dos dois → VERDE; XOR → AMARELO, com `zona_cinza=True`. **Substituído em 2026-10-23 por `SPEC_FASE2B_C3_SO_MODELO.md`:** `zona_cinza` passa a ser só `c2_positivo & ~c1_suspeita`.
 - `c1_reporte` **não** entra na cor.
 - `executar_pipeline(df_tx, df_irf, limiar_operacao=...)`:
   - Ordem de resolução do limiar: argumento explícito → `models/limiar_operacao.json` (`{"limiar": float | null, "x_max":..., "k_max":..., "data":...}`) → legado 70.0, com `logger.warning` dizendo que o limiar do ADR-0008 não foi calibrado. Gravar a origem na coluna `c2_limiar_origem` (`"argumento"`, `"artefato"` ou `"legado_70"`).
