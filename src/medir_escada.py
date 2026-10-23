@@ -50,9 +50,15 @@ def fmt(k: int, n: int) -> str:
 
 def carregar(caminho: Path) -> pd.DataFrame:
     df = pd.read_csv(caminho)
-    df["fraude"] = df["tipo_usuario"].str.contains("suspeito")
+    df["fraude"], _ = rotulos(df)
     df["regra_comportamento"] = df["c1_razoes"].fillna("").str.contains(REGRAS_COMPORTAMENTO)
     return df
+
+
+def rotulos(df: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
+    """Definições únicas de fracionador e poupador usadas no relatório."""
+    return (df["tipo_usuario"].str.contains("suspeito"),
+            df["tipo_usuario"].str.startswith("A_"))
 
 
 def degraus(df: pd.DataFrame) -> dict[str, pd.Series]:
