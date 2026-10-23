@@ -119,12 +119,12 @@ def irf_por_classe(df: pd.DataFrame) -> tuple[pd.Series, float, float]:
 def medir_cascata(df: pd.DataFrame) -> tuple[float | None, dict[str, tuple[int, int]], dict[str, tuple[int, int]], dict[str, tuple[int, int]]]:
     """Calibra em usuários distintos e mede somente no lado de avaliação."""
     from decisao import escolher_limiar_operacao, split_por_usuario
-    from pipeline_compliance import decisao_cascata
+    from pipeline_compliance import decisao_cascata, suspeita_de_razoes
 
     calibracao, avaliacao = split_por_usuario(df, seed=42)
     limiar = escolher_limiar_operacao(df, usuarios=calibracao)
     teste = df.loc[df["user_id"].isin(avaliacao)].copy()
-    teste["c1_suspeita"] = teste["c1_razoes"].fillna("").str.contains(r"(?:^|\|)R[3456]:")
+    teste["c1_suspeita"] = suspeita_de_razoes(teste["c1_razoes"])
     teste = decisao_cascata(teste, limiar)
     alerta = teste["alerta_final"] != "VERDE"
     tx = medir_degrau(teste, alerta)

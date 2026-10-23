@@ -60,6 +60,11 @@ MODELS_DIR.mkdir(parents=True, exist_ok=True)
 LIMITE_BCB_BRL = 10_000.0
 
 
+def suspeita_de_razoes(razoes: pd.Series) -> pd.Series:
+    """Identifica regras comportamentais R3-R6 em c1_razoes."""
+    return razoes.fillna("").str.contains(r"(?:^|\|)R[3456]:")
+
+
 # ══════════════════════════════════════════════════════════════════
 # CAMADA 1: FILTROS HEURISTICOS BCB
 # ══════════════════════════════════════════════════════════════════
@@ -142,7 +147,7 @@ def camada1_filtros_bcb(df: pd.DataFrame) -> pd.DataFrame:
 
     df["c1_razoes"] = df.index.map(lambda i: "|".join(flags_razoes[i]))
     df["c1_reporte"] = df["c1_razoes"].str.contains(r"(?:^|\|)R[12]:")
-    df["c1_suspeita"] = df["c1_razoes"].str.contains(r"(?:^|\|)R[3456]:")
+    df["c1_suspeita"] = suspeita_de_razoes(df["c1_razoes"])
     return df
 
 
@@ -363,12 +368,12 @@ _LIMIAR_NAO_INFORMADO = object()
 
 
 def decisao_cascata(df: pd.DataFrame, limiar: float | None) -> pd.DataFrame:
-    """Decide a cor pela concordância entre suspeita C1 e positivo C2."""
+    """Decide a cor por C1/C2; só o modelo positivo sem regra vai à C3."""
     df = df.copy()
     df["c2_positivo"] = False if limiar is None else df["c2_score_anomalia"] >= limiar
-    df["zona_cinza"] = df["c1_suspeita"] ^ df["c2_positivo"]
+    df["zona_cinza"] = df["c2_positivo"] & ~df["c1_suspeita"]
     df["alerta_final"] = np.select(
-        [df["c1_suspeita"] & df["c2_positivo"], df["zona_cinza"]],
+        [df["c1_suspeita"] & df["c2_positivo"], df["c1_suspeita"] | df["c2_positivo"]],
         ["VERMELHO", "AMARELO"], default="VERDE",
     )
     return df

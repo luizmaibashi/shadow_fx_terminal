@@ -85,7 +85,7 @@ def test_custo_contado_por_usuario():
 @pytest.mark.parametrize("regra,score,cor,cinza", [
     (True, 80.0, "VERMELHO", False),
     (False, 20.0, "VERDE", False),
-    (True, 20.0, "AMARELO", True),
+    (True, 20.0, "AMARELO", False),
     (False, 80.0, "AMARELO", True),
 ])
 def test_tabela_cascata(regra, score, cor, cinza):
@@ -101,6 +101,15 @@ def test_limiar_desligado():
     saida = decisao_cascata(df, None)
     assert saida["c2_positivo"].tolist() == [False, False]
     assert saida["alerta_final"].tolist() == ["AMARELO", "VERDE"]
+    assert not saida["zona_cinza"].any()
+
+
+@pytest.mark.parametrize("limiar", [None, 0.0, 50.0, 100.0])
+def test_regra_positiva_nunca_vai_a_c3(limiar):
+    df = pd.DataFrame({"c1_suspeita": [True, True, False, False],
+                       "c2_score_anomalia": [0.0, 100.0, 0.0, 100.0]})
+    saida = decisao_cascata(df, limiar)
+    assert not saida.loc[saida["c1_suspeita"], "zona_cinza"].any()
 
 
 @pytest.mark.parametrize("valores,regra", [([15000], "R1"), ([6000] * 9, "R2")])

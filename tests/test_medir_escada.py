@@ -93,6 +93,6 @@ class TestNumerosPublicados:
                       "fp_legitimos": (17, 1597)}
         assert usr == {"precisao": (5, 12), "recall": (5, 5),
                        "fp_legitimos": (7, 57), "poupadores_tocados": (0, 50)}
-        assert extra == {"zona_cinza_transacoes_C3": (688, 2291),
-                         "zona_cinza_usuarios": (12, 62),
-                         "fraudes_novas_por_100_cinza": (0, 688)}
+        assert extra == {"zona_cinza_transacoes_C3": (12, 2291),
+                         "zona_cinza_usuarios": (5, 62),
+                         "fraudes_novas_por_100_cinza": (0, 12)}
