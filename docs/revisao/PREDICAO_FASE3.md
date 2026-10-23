@@ -55,3 +55,26 @@ O mecanismo do erro de magnitude fica para o Luiz escrever: por que ele esperava
 | Recall (com ruído − sem) | "o mesmo do anterior" | +10 p.p. |
 | FP do poupador em dia de estresse | "o mesmo do anterior" | +5 p.p. |
 | O mecanismo se confirma? | "o mesmo do anterior" | Sim (+10 cai dentro de [+5; +24]) |
+
+## Teste de ruído: resultado (`src/medir_irf_ruido.py`, seeds 42/7, B=2.000)
+
+| Recall de fracionador (com coluna − sem) | Placebo | v2 |
+|---|---|---|
+| IRF (medição principal) | +14,0 p.p. [+5; +24] | +24,0 p.p. [+15; +33] |
+| **Ruído por dia** | **+2,0 p.p. [−8; +11]** | **+16,0 p.p. [+7; +26]** |
+
+FP do poupador em dia de estresse com ruído: placebo +0,2 p.p. [−0,8; +1,3]; v2 +1,6 p.p. [−0,6; +4,0].
+
+**Pelo critério escrito antes (sobreposição de IC):** os ICs se sobrepõem em [+5; +11], então o critério dá "confirma". **Esse critério era fraco demais.** Dois ICs largos se sobrepõem quase sempre, e os pontos dizem outra coisa: no placebo, o ruído ganha +2 e o IRF ganha +14. Leitura honesta:
+
+1. **A hipótese "qualquer dimensão extra gera ganho" não se sustenta no placebo.** O ganho falso do IRF ali vem de algo específico da forma da série (distribuição e autocorrelação no tempo), não do conteúdo macro e não de uma coluna qualquer. Próximo teste, se valer: o IRF com os dias embaralhados (mantém a distribuição e quebra a ordem) e o IRF embaralhado em blocos.
+2. **No v2, até o ruído puro "ganha" +16 p.p.** O v2 só difere do placebo no comportamento do poupador, então o ganho de +24 do IRF no v2 está majoritariamente inflado por um efeito que não depende do macro. Isso **reforça** o veredito da Fase 3: o IRF sai do pitch como diferencial.
+3. **Lição de método:** o recall por usuário com limiar escolhido pelo teto de poupadores é sensível a qualquer mudança de geometria do modelo. Toda ablação neste projeto precisa ter um controle de ruído ao lado, não só um placebo de dado.
+
+### Delta da predição (ruído)
+
+| Item | Predição | Medido | Bateu? |
+|---|---|---|---|
+| Recall (com ruído − sem), placebo | +10 p.p. | +2 p.p. [−8; +11] | Dentro do IC, mas longe do ponto |
+| FP de estresse, placebo | +5 p.p. | +0,2 p.p. [−0,8; +1,3] | Não |
+| Mecanismo confirma | Sim | Pelo critério, sim; pela substância, não | Critério mal escrito (erro do Claude) |
