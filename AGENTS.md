@@ -19,6 +19,7 @@ Atualizado em 2026-08-11 via `/grill-with-docs` (Blind Spot Pass + sabatina), de
 - `docs/audit/` — auditorias (PAVC, auditoria v2)
 - `docs/tese/` — sabatinas de valor/vantagem competitiva (`/tese`)
 - `docs/wayfinder/` — decomposição de escopo nebuloso em ticket (`/wayfinder`)
+- `docs/revisao/` — revisões datadas (2026-10: escada medida, plano em fases com critério de abandono)
 - `tests/` — testes unitários, 3 arquivos
 - `models/` — artefatos treinados (`isolation_forest_v1.joblib`, `scaler_v1.joblib`, `score_calibracao_v1.joblib`)
 - `data/` — dado bruto e processado, não versionado
@@ -42,14 +43,16 @@ Atualizado em 2026-08-11 via `/grill-with-docs` (Blind Spot Pass + sabatina), de
 |---|---|
 | **IRF** | Índice de Risco Fiscal (0-100). v1 (3 sinais, legado) e v2 (6 sinais, produção) coexistem — `irf_contexto` sempre usa v2. Não é métrica de risco de crédito nem de mercado, resume "quão hostil está o cenário macro brasileiro hoje", injetado como feature de ML |
 | **Smurfing** | Fracionamento de transação pra fugir de limite regulatório |
-| **Poupador Assustado** | Comprador legítimo de USDT como hedge contra a desvalorização do Real. É quem o projeto existe pra não incomodar — e é o perfil que mais sofre o trade-off medido (falso positivo aumenta 2,3x-3,5x com o IRF, faixa não número fixo, ver `TESE.md`) |
+| **Poupador Assustado** | Comprador legítimo de USDT como hedge contra a desvalorização do Real. É quem o projeto existe pra não incomodar — a ablação de 2026-08 mostrou FP subindo 2,3x-3,5x com o IRF, mas a revisão 2026-10 mostrou que o dado não testa o IRF (ver Métrica de sucesso) |
 | **Fracionador** | Perfil suspeito: estrutura múltiplas transações abaixo de R$ 10k pra evitar reporte. É quem o projeto existe pra pegar |
 | **Compliance** | Não é "seguir regra" — é decidir, por transação, se precisa de atenção humana, em 3 camadas de custo crescente |
 | **Risco** | Probabilidade de evasão de divisas ou lavagem, nunca "risco de mercado" ou "risco de crédito" |
 | **Score contextual** | Score de anomalia que muda de significado dependendo do cenário macro do dia (via IRF), não um score fixo por padrão de transação isolado |
 | **Camada 1** | Filtros determinísticos das Resoluções BCB 519-521/2026 (R1-R5) |
 | **Camada 2** | Isolation Forest com IRF como feature contextual |
-| **Camada 3** | LLM-as-Judge com RAG temporal (atas do Copom) — validada com chamada real ao Gemini 2.5 Flash em 2026-08-11 (não é só fallback), ativa via `LLM_JUDGE_ENABLED=true` + `GEMINI_API_KEY` |
+| **Camada 3** | LLM-as-Judge com RAG temporal (atas do Copom) — validada com chamada real ao Gemini 2.5 Flash em 2026-08-11 (não é só fallback), ativa via `LLM_JUDGE_ENABLED=true` + `GEMINI_API_KEY`. Nunca avaliado contra gabarito; `c3_veredito` não entra em `score_final` (revisão 2026-10) |
+| **Escada de degraus** | Ordem de custo: regra → ML clássico → chamada LLM. Sobe um degrau só se o anterior falha em algo medido. Medida por `src/medir_escada.py` |
+| **Regra de comportamento** | R3, R4, R5 (wallets, fracionamento, madrugada). Diferente de R1/R2, que são de reporte obrigatório por valor/volume e acertam o institucional legítimo |
 | **VERDE / AMARELO / VERMELHO** | Classificação final por `score_final` (buckets 0-40/40-70/70-100). Não confundir com `c2_classificacao` (normal/cinza/suspeito), que é saída intermediária só da Camada 2 |
 | **wallets_unicas** | Contagem de wallets distintas por dia (regra R3). Não confundir com `entropia_wallets` (dispersão no histórico inteiro do usuário, escopo diferente) |
 | **COAF** | Conselho de Controle de Atividades Financeiras |
@@ -63,7 +66,7 @@ Atualizado em 2026-08-11 via `/grill-with-docs` (Blind Spot Pass + sabatina), de
 - `IRF_LAG_DAYS=14` é obrigatório pra evitar vazamento de dado macro (IPCA/Selic/dívida-PIB são publicados com semanas de atraso; usar o IRF do dia exato da transação vazaria informação do futuro).
 - `LLM_JUDGE_ENABLED=false` por padrão — ativa via `.env` com `GEMINI_API_KEY`.
 - Docker roda non-root (`USER appuser`).
-- Testes: `pytest tests/ -v` — 4 arquivos (`test_utils.py`, `test_pipeline_compliance.py`, `test_agente_rag.py`, `test_app_smoke.py`). 64 no total, mas 9 pulam via `skipif` quando faltam artefatos locais: `TestDatasetMestre` (5, integração) sem `data/raw/*.csv`, e `test_app_smoke.py` (4, uma por página do dashboard via `streamlit.testing.v1.AppTest`) sem `data/processed/`+`models/` — é o caso do CI, que roda 55.
+- Testes: `pytest tests/ -v` — 6 arquivos (`test_utils.py`, `test_pipeline_compliance.py`, `test_agente_rag.py`, `test_app_smoke.py`, `test_site_generator.py`, `test_medir_escada.py`). 83 no total, mas 9 pulam via `skipif` quando faltam artefatos locais: `TestDatasetMestre` (5, integração) sem `data/raw/*.csv`, e `test_app_smoke.py` (4, uma por página do dashboard via `streamlit.testing.v1.AppTest`) sem `data/processed/`+`models/` — é o caso do CI. `test_medir_escada.py` roda no CI sobre o snapshot versionado em `deploy/hf_space/data/processed/` e trava os números da escada publicados no README.
 - Log em `pipeline.log`, não versionado.
 - Normalização do score do Isolation Forest é calibrada empiricamente (p1/p99) no treino e salva em `models/score_calibracao_v1.joblib` — nunca hardcodear range fixo (`carregar_calibracao_score()`/`normalizar_score_anomalia()` em `pipeline_compliance.py` são a fonte única, usada tanto no pipeline batch quanto na API).
 
@@ -71,6 +74,7 @@ Atualizado em 2026-08-11 via `/grill-with-docs` (Blind Spot Pass + sabatina), de
 
 ## Restrições técnicas confirmadas (sabatina 2026-08-10/11)
 
+- **O dado sintético é circular** (revisão 2026-10): fraude gerada em R$ 8.500-9.900 de madrugada = R4+R5, e IRF independente da classe. Nenhum degrau acima da regra pode se provar nele.
 - **A maior restrição hoje é dado sintético.** Nenhuma validação usa transação real — `gerador_transacoes_mock.py` gera com seed fixa, rótulo conhecido por construção. As métricas de precisão/recall no `TESE.md` são contra esse rótulo sintético, não contra produção.
 - **Não tem banco de dados** — CSV + joblib em memória no startup da API (ADR-0006, decisão consciente, não bug).
 - **Não persiste histórico por usuário** — a API não verifica a regra R2 (volume 30 dias) por transação isolada, só o pipeline batch consegue.
@@ -82,7 +86,9 @@ Atualizado em 2026-08-11 via `/grill-with-docs` (Blind Spot Pass + sabatina), de
 
 ## Métrica de sucesso e cenário de falha (falsificabilidade)
 
-Herdado do `TESE.md`: a tese (e o projeto) falha se, medido contra o rótulo de verdade do dataset sintético, o IRF não melhorar a precisão em relação a rodar sem ele. Testado em 2 rodadas de correção (`IRF_LAG_DAYS=14` + calibração empírica do IRF v2, 2026-08-11): precisão 35,9% → 44,8%, recall 34,4% → 49,9%. O critério de morte nunca disparou nas 3 versões testadas — o veredito "VAI" é robusto. O trade-off de falso positivo oscilou entre 2,3x e 3,5x conforme os bugs foram corrigidos, então é reportado como faixa (2-3,5x), não número de 1 casa decimal (ver `TESE.md`, adendo 2).
+Histórico (`TESE.md`, 2026-08): o critério era "IRF melhora a precisão contra o rótulo sintético", e a ablação deu 35,9% → 44,8%. **Revisão 2026-10 invalidou esse teste:** o gerador sorteia datas sem olhar o macro, então o IRF tem a mesma distribuição nas 3 classes (KS p=0,19) e não pode carregar sinal; e a regra R3∪R4∪R5 sozinha pega 1.314/1.315 transações de fracionador com 0,4% de FP, porque o gerador embute o rótulo na regra. O ganho do IRF é artefato, não evidência. Não citar 35,9→44,8 como efeito do IRF.
+
+Critério vigente (`docs/revisao/2026-10-REVISAO.md` §4.3), avaliado só com gerador v2: (A) no controle sem acoplamento macro, ganho do IRF com IC contendo zero; (B) no v2, ganho de recall no mesmo teto de dano ao poupador com IC inferior > 0; (C) em dia de IRF alto, FP do poupador com IRF ≤ sem IRF. Falhar em qualquer um tira o IRF do pitch como diferencial. Unidade de análise: usuário (hoje só 10 fracionadores).
 
 ---
 

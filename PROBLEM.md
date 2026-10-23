@@ -79,11 +79,34 @@ Camada 3 — LLM como juiz (agente RAG + atas do Copom)
   gera rascunho de RIF pro COAF
 ```
 
-Os percentuais de cobertura acima são estimativa de desenho, feita antes de medir. Medido nas 4.509 transações sintéticas de `deploy/hf_space/data/processed/resultado_compliance.csv`: a Camada 1 sinaliza 3.345 casos (74,2%), e a zona cinza da Camada 2 (score entre 40 e 70), que é o que seguiria para o LLM, tem 1.164 casos (25,8%), não 0,2%. Com o juiz ligado, a Camada 3 receberia cerca de 130 vezes o volume previsto, e a premissa de custo da cascata não se sustenta sem um corte mais estreito da zona cinza.
+Os percentuais de cobertura acima são estimativa de desenho, feita antes de medir. Medido nas 4.509 transações sintéticas de `deploy/hf_space/data/processed/resultado_compliance.csv`: a Camada 1 sinaliza 3.345 casos (74,2%), e a zona cinza da Camada 2 (score entre 40 e 70), que é o que seguiria para o LLM, tem 1.164 casos (25,8% [24,6; 27,1]), não 0,2%. Com o juiz ligado, a Camada 3 receberia cerca de 130 vezes o volume previsto.
 
-A inovação central é o IRF como feature contextual: injetar o índice como variável do modelo transforma um classificador comportamental num sistema que entende quando o comportamento é suspeito, não só como ele parece.
+A ideia de desenho era o IRF como feature contextual: com o índice dentro do modelo, ele julgaria não só como o comportamento parece, mas quando ele é suspeito. A próxima seção mostra que o dado atual não consegue testar essa ideia.
 
-Resposta: um pipeline em cascata onde cada camada resolve o trivial e passa o complexo adiante. A eficiência vem da hierarquia, a inteligência vem do IRF.
+Resposta de desenho: um pipeline em cascata onde cada camada resolve o trivial e passa o complexo adiante. Resposta medida: no dado atual, o primeiro degrau já resolve tudo, e os de cima não têm trabalho.
+
+---
+
+## A escada medida (revisão de outubro/2026)
+
+Cada degrau de custo maior só se justifica se o anterior falhar em algo. Medi cada um contra o rótulo do dataset sintético. Reproduz com `python src/medir_escada.py`, e os números ficam travados em `tests/test_medir_escada.py`. Intervalos são Wilson 95%.
+
+| Degrau | Sinaliza | Precisão | Recall (fracionador) | Legítimo sinalizado |
+|---|---:|---|---|---|
+| Camada 1 completa (R1-R6) | 3.345 | 39,3% [37,7; 41,0] | 100% [99,7; 100] | 63,6% [61,9; 65,2] |
+| **Só regras de comportamento (R3, R4, R5)** | 1.327 | **99,0% [98,3; 99,4]** | **99,9% [99,6; 100]** | **0,4% [0,2; 0,7]** |
+| Isolation Forest "suspeito" (score > 70) | 369 | 39,0% [34,2; 44,1] | 11,0% [9,4; 12,8] | 7,0% [6,2; 8,0] |
+| Alerta final AMARELO ou VERMELHO | 1.460 | 44,8% [42,3; 47,4] | 49,7% [47,0; 52,4] | 25,2% [23,8; 26,8] |
+
+O que a tabela diz:
+
+1. **A regra sozinha resolve este dado.** Pega 1.314 de 1.315 transações de fracionador e erra em 13 de 3.194 legítimas. R1 e R2 (valor e volume) são regras de reporte obrigatório e acertam em cheio o institucional legítimo; misturadas com as de comportamento, elas inflam a Camada 1 para 74%.
+2. **O modelo não acrescenta nada à regra aqui.** Onde só o modelo acusa (score > 70 sem regra de comportamento), há 0 fraudes em 225 casos [0; 1,7%]. E ele dá score abaixo de 40 a 654 transações de fracionador que a regra pegou.
+3. **O motivo é que o teste é circular.** O gerador (`src/gerador_transacoes_mock.py`) cria a fraude com valor entre R$ 8.500 e R$ 9.900 na madrugada, exatamente o que R4 e R5 procuram. Não existe no dado um fracionador que fuja da regra, então nenhum degrau acima tem o que fazer.
+4. **O `n` que importa é de pessoas.** São 10 fracionadores, 100 poupadores e 15 institucionais. Por usuário, a regra pega 10 de 10 fracionadores (IC [72; 100]) e não toca nenhum dos 100 poupadores ([0; 3,7]). Intervalo por transação passa mais certeza do que 10 pessoas sustentam.
+5. **O juiz LLM nunca foi avaliado, e seu veredito não muda nada.** `c3_veredito` não entra em `score_final`, na API nem no dashboard. No snapshot, os 1.164 casos cinza estão em `FALLBACK`.
+
+Leitura: o resultado não diz que o ML ou o LLM são inúteis no mundo real. Diz que este dado não tem o caso que justificaria subir um degrau. Saber dizer isso com número é o ponto deste projeto hoje. Diagnóstico completo e plano: `docs/revisao/2026-10-REVISAO.md`.
 
 ---
 
@@ -99,9 +122,11 @@ A seção anterior descreve o que o IRF deveria fazer: distinguir Cidadão A de 
 
 Base: as 4.509 transações sintéticas do gerador. Os números são pontuais, sem intervalo de confiança, e a ablação que os gerou não está versionada no repositório.
 
-O que isso significa, sem retórica: o IRF pega mais fracionador de verdade, mas em troca incomoda mais o Cidadão A — o poupador assustado que o projeto existe pra proteger. Isso não invalida o projeto — a tese sobreviveu ao teste de falsificação nas 3 versões testadas, precisão e recall sempre melhoraram, não é ruído — mas é uma tensão real entre os dois objetivos da Pergunta 2, não uma solução que resolve os dois sem custo. O multiplicador exato do falso positivo (2,3x a 3,5x) se moveu a cada bug de calibração corrigido, então é reportado como faixa, não número fixo — é a leitura honesta (ver `TESE.md`, adendo 2).
+**Revisão de outubro/2026: esta tabela não sustenta a tese, nem contra nem a favor.** O gerador sorteia a data de cada transação sem olhar o cenário macro, então o IRF tem a mesma distribuição nas três classes (média 25,6 no poupador, 26,3 no institucional, 25,9 no fracionador; KS poupador × fracionador D = 0,043, p = 0,19). Se o IRF não difere entre quem frauda e quem poupa, ele não tem como informar o modelo sobre quem é quem. O ganho de 35,9% para 44,8% vem da forma como o Isolation Forest separa pontos quando ganha uma dimensão a mais, não do contexto. A oscilação do falso positivo do poupador entre 2,3x e 3,5x a cada correção de calibração é o sintoma: efeito real não se move tanto com ajuste de calibração. E o comportamento que a tese descreve (o poupador compra mais quando o câmbio sobe) nunca foi simulado.
 
-Decisão registrada: aceitar o trade-off como está e documentá-lo, sem tunar o modelo pra reduzir o falso positivo, porque o dataset é sintético — otimizar em cima dele arrisca ajustar pra um ruído que não existe em produção real. Ver `docs/wayfinder/tese-veredito-condicoes/0001-tunar-ou-aceitar-trade-off.md`.
+O que muda: o trade-off da tabela não é "o preço do IRF", é ruído de um teste que não podia dar certo. A tese do IRF volta a ser hipótese, com teste e critério de abandono escritos antes de rodar (`docs/revisao/2026-10-REVISAO.md`, §4): gerador novo em que o poupador reage ao câmbio e o fracionador não, um controle sem esse acoplamento em que o IRF precisa dar ganho zero, e comparação por usuário com o mesmo teto de dano ao poupador. Se falhar, o IRF sai do discurso como diferencial e fica como contexto exibido ao analista.
+
+A decisão anterior de não tunar o modelo no dado sintético (`docs/wayfinder/tese-veredito-condicoes/0001-tunar-ou-aceitar-trade-off.md`) continua certa, agora por um motivo mais forte: não há sinal do IRF para tunar.
 
 ---
 
@@ -109,7 +134,7 @@ Decisão registrada: aceitar o trade-off como está e documentá-lo, sem tunar o
 
 O mercado de blockchain analytics/AML já é dominado por Chainalysis, TRM Labs, Elliptic — modelo robusto, infraestrutura, clientes, centenas de milhões em captação. Nenhum dos três compete de frente em "modelo melhor": eles têm mais dado, mais engenharia, mais tempo de mercado. A vantagem deste projeto está em outro eixo — contexto macro-fiscal como feature, mais especificidade regulatória brasileira — não em detectar melhor no sentido genérico.
 
-"Detectar melhor" não é o argumento certo, porque o ganho de precisão vem com custo real (mais falso positivo, como visto acima). Um discurso de "nosso modelo é mais preciso" sem essa ressalva cairia em 5 minutos na frente de qualquer avaliador técnico.
+"Detectar melhor" não é o argumento certo: no dado sintético a regra simples já detecta tudo, e o ganho atribuído ao IRF não se sustenta (ver acima). Um discurso de "nosso modelo é mais preciso" cairia em 5 minutos na frente de qualquer avaliador técnico.
 
 "Nicho porque eles não têm orçamento pra atender" também não é o argumento certo — foi a primeira hipótese testada, e caiu contra um fato real: VASP autorizada no Brasil precisa de capital mínimo de R$ 10,8 milhões por lei (fonte: NDM Advogados). Não é startup sem grana disputando com quem paga US$ 50-200K/ano de Chainalysis.
 
@@ -128,7 +153,7 @@ A ressalva que fica, com honestidade: essa tese é bem fundamentada em fato púb
 | Stakeholder | Problema resolvido | Valor gerado |
 |---|---|---|
 | Corretoras de cripto | Falso positivo bloqueando cliente legítimo | Contexto reduz falso positivo frente a regra fixa incondicional, mas não zera — reduz relativo ao modelo sem IRF (ver trade-off acima). Reduz fadiga do analista via priorização, não elimina revisão humana |
-| Bancos e fintechs | Compliance cego ao contexto macroeconômico | Sistema de AML que pondera crise vs. crime, com precisão medida em dado sintético (44,8% vs. 35,9%) |
+| Bancos e fintechs | Compliance cego ao contexto macroeconômico | Hipótese: pesar crise vs. crime. Ainda não testada (o dado sintético não carrega sinal do IRF); teste e critério de abandono em `docs/revisao/2026-10-REVISAO.md` |
 | Reguladores (BCB/COAF) | Excesso de reporte de baixa qualidade escondendo os reais | Reporte mais preciso, com rascunho automatizado via LLM |
 | Mercado de dados | Validação independente do paper de Britto (2026) | Evidência econométrica com cadeia de 5 provas convergentes |
 

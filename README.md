@@ -15,7 +15,7 @@ Quer entender o raciocínio de negócio primeiro? Vá pro [PROBLEM.md](PROBLEM.m
 [![CI](https://github.com/luizmaibashi/shadow_fx_terminal/actions/workflows/ci.yml/badge.svg)](https://github.com/luizmaibashi/shadow_fx_terminal/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-2E6F68)
-![Testes](https://img.shields.io/badge/testes-71%20%289%20exigem%20dados%20locais%29-2E6F68)
+![Testes](https://img.shields.io/badge/testes-83%20%289%20exigem%20dados%20locais%29-2E6F68)
 
 ---
 
@@ -64,7 +64,7 @@ python src/pipeline_compliance.py         # classifica em VERDE/AMARELO/VERMELHO
 streamlit run app.py                      # http://localhost:8501
 
 # 6. Rode os testes
-pytest tests/ -v --cov=src                # 71 testes + coverage
+pytest tests/ -v --cov=src                # 83 testes + coverage
                                            # (9 pulam sem data/ e models/ locais: 5 de integracao
                                            #  + 4 de smoke do dashboard, ver tests/test_app_smoke.py)
 ```
@@ -111,6 +111,8 @@ O pipeline segue o padrão de filtros em cascata (Stanford CS230), que resolve o
 2. **Camada 2: IA de detecção.** Isolation Forest calibrado com o IRF v2, diferenciando hedge (compra de USDT que acompanha a desvalorização) de anomalia de descorrelação (compra massiva num dia de calmaria cambial, indício de lavagem ou evasão).
 3. **Camada 3: LLM como juiz.** Um agente lê as atas do Copom e analisa qualitativamente os casos em zona cinza.
 
+Esse é o desenho. Na medição de outubro/2026 (seção [A escada medida](#a-escada-medida-outubro2026)), a Camada 1 sozinha já resolve o dado sintético. No código atual, a Camada 2 roda em todas as transações, não só nas que a regra sinalizou, e o veredito do juiz LLM não entra na decisão final.
+
 ---
 
 ## Rigor científico
@@ -148,7 +150,7 @@ brasileiro assustado com o câmbio em R$ 6,30 é bloqueado.
 
 A ideia central do Shadow FX Terminal é simples: injetar o contexto macroeconômico como variável do modelo. Um brasileiro que compra R$ 8.000 de USDT num dia qualquer e outro que compra o mesmo valor no dia em que o Real perdeu 4% e o IRF está em 87/100 não são o mesmo evento estatístico. O primeiro é estranho; o segundo é esperado. Regra fixa não enxerga essa diferença. Um modelo que sabe o estado do câmbio, a trajetória da dívida, o tom do último Copom e a busca por USDT no Brasil, enxerga.
 
-Em termos regulatórios: o IRF melhora a precisão dos reportes ao COAF (medido em 4.509 transações sintéticas: 35,9% → 44,8%, sem intervalo de confiança) frente a um modelo sem contexto macro. Não garante zero exclusão de gente legítima: o mesmo contexto que ajuda a pegar mais fracionador também aumenta o falso positivo em poupador legítimo, entre 2,3x e 3,5x conforme a rodada de calibração (ver seção de Resultados). É uma melhora mensurável, não uma solução sem custo.
+Essa é a hipótese, e ela ainda não foi testada. O dado sintético do projeto sorteia a data de cada transação sem olhar o cenário macro, então o IRF é igual para quem frauda e para quem poupa, e não tem como ajudar o modelo a separar um do outro. O ganho de precisão que este README citava antes (35,9% → 44,8%) não vem do contexto. Detalhe na seção [A escada medida](#a-escada-medida-outubro2026).
 
 ---
 
@@ -227,6 +229,7 @@ shadow_fx_terminal/
 │   ├── gerador_transacoes_mock.py
 │   ├── treinar_modelo.py         ← treina o Isolation Forest (Notebook 03)
 │   ├── pipeline_compliance.py    ← motor AML: 3 camadas em cascata
+│   ├── medir_escada.py           ← mede cada degrau contra o rótulo, com n e IC
 │   ├── api.py                    ← backend FastAPI
 │   └── agente_rag.py             ← fase 5: Gemini 2.5 Flash + RAG das atas
 │
@@ -258,7 +261,8 @@ shadow_fx_terminal/
 │   ├── test_pipeline_compliance.py ← 22 testes
 │   ├── test_agente_rag.py          ← 5 testes
 │   ├── test_site_generator.py      ← 7 testes
-│   └── test_app_smoke.py           ← 4 testes (dashboard; 71 no total)
+│   ├── test_medir_escada.py        ← 12 testes (trava os números da escada)
+│   └── test_app_smoke.py           ← 4 testes (dashboard; 83 no total)
 │
 └── reports/                      ← visualizações geradas
 ```
@@ -301,7 +305,7 @@ python src/gerador_transacoes_mock.py   # gera 4.509 transações (3 perfis)
 python src/pipeline_compliance.py       # 3 camadas → resultado_compliance.csv
 
 # 6. rodar os testes
-python -m pytest tests/ -v              # 71 testes, 5 arquivos
+python -m pytest tests/ -v              # 83 testes, 6 arquivos
                                          # (9 pulam sem data/raw/, data/processed/ e models/ locais,
                                          #  55 rodam no CI, que não gera esses artefatos)
 ```
@@ -409,17 +413,36 @@ Números medidos em 2026-08-11, depois de corrigir um bug de calibração no `sc
 
 A tabela acima é o alerta final. O roteamento entre camadas é outra conta: na mesma base, a zona cinza da Camada 2 (score entre 40 e 70), que seguiria para o juiz LLM, tem 1.164 transações (25,8%). O desenho em `PROBLEM.md` previa cerca de 0,2%. Com o juiz ligado, o custo da Camada 3 seria muito maior que o planejado, e esse é o próximo ajuste antes de ligá-lo.
 
+### A escada medida (outubro/2026)
+
+Cada degrau mais caro só se paga se o anterior falhar em algo. Medi cada um contra o rótulo do dataset sintético. Para reproduzir: `python src/medir_escada.py`. Os números ficam travados em `tests/test_medir_escada.py`. Intervalos de Wilson 95%.
+
+| Degrau | Sinaliza | Precisão | Recall (fracionador) | Legítimo sinalizado |
+|---|---:|---|---|---|
+| Camada 1 completa (R1-R6) | 3.345 | 39,3% [37,7; 41,0] | 100% [99,7; 100] | 63,6% [61,9; 65,2] |
+| **Só regras de comportamento (R3, R4, R5)** | 1.327 | **99,0% [98,3; 99,4]** | **99,9% [99,6; 100]** | **0,4% [0,2; 0,7]** |
+| Isolation Forest "suspeito" (score > 70) | 369 | 39,0% [34,2; 44,1] | 11,0% [9,4; 12,8] | 7,0% [6,2; 8,0] |
+| Alerta final AMARELO ou VERMELHO | 1.460 | 44,8% [42,3; 47,4] | 49,7% [47,0; 52,4] | 25,2% [23,8; 26,8] |
+
+- **A regra sozinha resolve.** Pega 1.314 de 1.315 transações de fracionador e erra em 13 de 3.194 legítimas.
+- **O modelo não soma nada à regra neste dado.** Onde só ele acusa, há 0 fraudes em 225 casos.
+- **O teste é circular, e isso é o achado.** O gerador cria a fraude com valor entre R$ 8.500 e R$ 9.900 na madrugada, exatamente o que as regras R4 e R5 procuram. Não existe no dado um fracionador que escape da regra, então nenhum degrau acima tem trabalho.
+- **O IRF não carrega sinal aqui.** A média é 25,6 no poupador e 25,9 no fracionador (teste KS, p = 0,19).
+- **O `n` que importa é de pessoas: 10 fracionadores.** Por usuário, a regra pega 10 de 10 (IC [72; 100]) e não toca nenhum dos 100 poupadores ([0; 3,7]).
+
+Isso não prova que ML ou LLM sejam inúteis em produção. Prova que este dado não tem o caso que justificaria subir um degrau. O próximo passo é um gerador em que o poupador reaja ao câmbio e o fracionador fuja da regra, com um teste de controle em que o IRF precisa dar ganho zero e um critério de abandono escrito antes de rodar. Diagnóstico e plano em [`docs/revisao/2026-10-REVISAO.md`](docs/revisao/2026-10-REVISAO.md).
+
 ### O que o modelo resolve, e o que ele não resolve de graça
 
-Sistema de compliance baseado só em regra ("flag se > R$ 10.000") gera milhares de falso positivo ou deixa passar o criminoso esperto. A simulação com 4.509 transações mostra que ML + contexto macro (IRF) melhora essa distinção, mas com custo real:
+Os três perfis do dataset sintético, e o que o pipeline faz com cada um. Os efeitos do IRF citados aqui vêm de uma ablação de agosto/2026, sem intervalo e não versionada. A medição de outubro mostrou que esse dado não consegue testar o IRF (ver [A escada medida](#a-escada-medida-outubro2026)), então trate esses números como ruído:
 
-**Tipo A: o poupador assustado (legítimo).** Compra USDT no desespero quando o câmbio derrete. Como o IRF entra no modelo, a IA entende que num dia de risco fiscal alto essa corrida é esperada, e tende a classificar como VERDE com mais frequência que um sistema sem contexto. Mas não é garantia: contra o rótulo de verdade do dataset, o falso positivo nesse perfil aumenta entre 2,3x e 3,5x com o IRF ligado (o número exato oscilou em 3 correções de bug independentes; ver `TESE.md`, adendo 2). O ganho de precisão geral (35,9% → 44,8%) vem em parte às custas desse perfil.
+**Tipo A: o poupador assustado (legítimo).** Compra USDT no desespero quando o câmbio derrete. A ideia do projeto é que o IRF faça o modelo entender que, num dia de risco fiscal alto, essa corrida é esperada. No dado atual isso não acontece: o falso positivo nesse perfil subiu entre 2,3x e 3,5x com o IRF ligado, e o número oscilou a cada correção de bug. O gerador nunca simulou esse poupador reagindo ao câmbio.
 
 **Tipo B: o institucional / mesa de arbitragem (legítimo, mas volumoso).** Movimenta R$ 200.000 todo dia. A Isolation Forest olha o histórico e entende que volume gigante é o "normal" dessa carteira: em vez de disparar alerta vermelho, sinaliza como AMARELO.
 
-**Tipo C: o fracionador / evasor (suspeito).** Faz 11 transferências de R$ 9.500 de madrugada, smurfing pra fugir do limite de R$ 10k. O modelo detecta com mais recall que sem o IRF (34,4% → 49,9%, contra o rótulo de verdade), mas ainda deixa passar mais da metade dos fracionadores reais do dataset sintético. Não é detecção perfeita, é melhor que a alternativa sem contexto.
+**Tipo C: o fracionador / evasor (suspeito).** Faz 11 transferências de R$ 9.500 de madrugada, smurfing pra fugir do limite de R$ 10k. A regra de fracionamento (R4) e a de madrugada (R5) pegam quase todos. O alerta final do modelo deixa passar metade, porque mistura o score do Isolation Forest com a regra e dilui o que a regra já tinha acertado.
 
-Essa abordagem reduz a fadiga do time de operações via priorização, não elimina falso positivo nem garante recall total. O trade-off é medido e aceito conscientemente, não escondido, porque o dataset é sintético: otimizar em cima dele arriscaria ajustar pra um ruído que não existe em produção real.
+Não há ajuste de modelo nesta versão, de propósito: com dado sintético e circular, otimizar seria ajustar para ruído.
 
 ### Fase 4: dashboard e API
 
@@ -491,6 +514,10 @@ Item 5 é a diferença entre "roda no meu Docker" e "aguenta tráfego real": dec
 - [x] Fase 4: dashboard Streamlit
 - [x] Fase 4: testes unitários (pytest)
 - [x] Fase 5: agente RAG (Camada 3), com fallback pra indisponibilidade da API
+- [x] Revisão de outubro/2026: escada medida com `n` e intervalo (`src/medir_escada.py`)
+- [ ] Gerador v2 com acoplamento macro e teste de controle do IRF
+- [ ] Eval do juiz LLM (60 casos rotulados, comparado com regra + score)
+- [ ] Cascata real: reporte obrigatório separado de suspeita; zona cinza por discordância entre degraus
 
 ---
 
