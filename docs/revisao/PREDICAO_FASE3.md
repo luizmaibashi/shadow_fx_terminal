@@ -41,3 +41,17 @@ Período efetivo 02/01/2024-27/06/2025. Avaliação: 625 usuários (100 fraciona
 | FP de estresse v2 | +5 p.p. | +1,8 p.p. [−0,2; +3,8] | Não: fora do IC, superestimou |
 
 O mecanismo do erro de magnitude fica para o Luiz escrever: por que ele esperava menos ganho de recall e mais dano ao poupador do que o medido.
+
+---
+
+## Teste de ruído: predição (registrada antes de rodar, 2026-10-23)
+
+**Desenho:** no mundo placebo, troca-se `irf_contexto` por uma coluna de ruído puro (N(0,1) sorteado por dia, igual para todas as transações do dia, seed 7). Compara-se o modelo com ruído e o modelo sem a coluna, com o mesmo split, o mesmo teto de dano (x_max=0,05), o bootstrap pareado por usuário (B=2.000) e o dia de estresse definido pelo IRF real (≥ 47,38).
+
+**Critério escrito antes:** o mecanismo "dimensão extra + recall por usuário" se confirma se o IC do ganho de recall com ruído se sobrepuser ao IC do IRF no placebo ([+5; +24] p.p.).
+
+| Pergunta | Predição do Luiz (literal) | Leitura registrada |
+|---|---|---|
+| Recall (com ruído − sem) | "o mesmo do anterior" | +10 p.p. |
+| FP do poupador em dia de estresse | "o mesmo do anterior" | +5 p.p. |
+| O mecanismo se confirma? | "o mesmo do anterior" | Sim (+10 cai dentro de [+5; +24]) |
