@@ -140,6 +140,8 @@ def camada1_filtros_bcb(df: pd.DataFrame) -> pd.DataFrame:
         flags_razoes[idx].append("R5:madrugada_valor_alto")
 
     df["c1_razoes"] = df.index.map(lambda i: "|".join(flags_razoes[i]))
+    df["c1_reporte"] = df["c1_razoes"].str.contains(r"(?:^|\|)R[12]:")
+    df["c1_suspeita"] = df["c1_razoes"].str.contains(r"(?:^|\|)R[3456]:")
     return df
 
 
