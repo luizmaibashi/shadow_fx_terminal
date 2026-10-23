@@ -52,7 +52,7 @@ def gerar_dataset_v2(irf_diario: pd.Series, acoplamento: bool, seed: int = 2026,
   - Número de compras no dia t ~ Poisson(`λ₀ · exp(β·z(t))`) se `acoplamento`, senão Poisson(`λ₀'`).
   - `λ₀` é calibrado para ~12 compras por usuário no período (como o v1).
   - **`λ₀'` é escolhido para que o total esperado seja igual ao do mundo acoplado.**
-  - Ticket: `uniform(800, 3500)` por usuário × `(1 + γ·max(z(t),0))` se `acoplamento`. No placebo, o multiplicador é a média do multiplicador acoplado sobre os dias, para manter o volume.
+  - Ticket: `uniform(800, 3500)` por usuário × `(1 + γ·max(z(t),0))` se `acoplamento`. No placebo, o multiplicador é a **média ponderada pelo número esperado de compras**, `Σ λ(t)·m(t) / Σ λ(t)`, para que o valor movimentado esperado seja igual ao do v2 (esclarecimento §8.1).
   - Horário e wallet como no v1.
 - **Fracionador clássico:** como o v1 (valores 8.500-9.900, madrugada, 15-40 wallets, rajadas). Datas uniformes, **sem acoplamento nos dois mundos**.
 - **Fracionador fora da regra:** valor `uniform(4000, 7900)`, hora 9-18, 2-4 wallets distintas por dia, rajadas de 3-6 transações num mesmo dia, ~8-15 dias de rajada no período. Sem acoplamento.
@@ -141,3 +141,26 @@ Responder com:
 - o número de dias com NaN no início;
 - a confirmação de que `test_medir_escada.py` não mudou e passa;
 - toda divergência entre o código real e esta spec, com a decisão tomada. O ideal é parar e perguntar antes de decidir.
+
+## 8. Esclarecimentos (2026-10-23, depois que o Codex parou)
+
+### 8.1 Multiplicador do ticket no placebo
+
+A versão anterior desta spec pedia a média simples de `m(t) = 1 + γ·max(z(t),0)` entre os dias. Isso é um erro da spec: no mundo acoplado, quantidade e ticket sobem juntos, então o valor esperado é `Σ λ(t)·m(t)`, e não `Σ λ(t) · média(m)`. Na onda de teste, a média simples dá 1,135 e a ponderada dá 1,238, o que deixa o placebo 8,4% abaixo do v2.
+
+**Regra:** use a média ponderada pelo número esperado de compras. O critério de ±5% do §5.4 **continua valendo**. O objetivo do placebo é ter o mesmo volume e o mesmo valor, de modo que a única diferença entre os mundos seja a correlação com o macro.
+
+### 8.2 Ambiente de teste
+
+O erro na criação do diretório temporário é do ambiente, não do código. Rode `pytest tests/ -q --basetemp=.pytest_tmp`. O `.pytest_tmp/` não vai para commit. A entrega só conta como validada com a suíte inteira verde.
+
+### 8.3 Série da dívida (decisão do Luiz, 2026-10-23)
+
+O Codex confirmou que a SGS 4537 é a "Dívida bruta do governo geral (% PIB) — Metodologia utilizada até 2007". O mercado acompanha a DBGG da metodologia vigente, que fechou 2025 em 78,7% (Estatísticas Fiscais do BCB, 30/01/2026). **Decisão: trocar pela série vigente.**
+
+- Localize no SGS o código da DBGG em % do PIB pela metodologia vigente. O candidato é 13762, **mas confirme pelo nome oficial**: a API recusou a consulta do Claude.
+- Confira um ponto: dez/2025 ≈ 78,7.
+- Troque o código em `coletar_dados.py`. O nome da coluna (`divida_bruta_pib`) e o offset de 70 dias continuam iguais.
+- Registre o motivo da troca em uma linha do `AGENTS.md`, na seção de fontes macro.
+- **Não rode a coleta com rede no teste.** Se tiver rede, rode `coletar_dados.py` e `recalcular_irf.py` uma vez, sem commitar `data/`, e informe o primeiro e o último valor da série nova.
+- Se não achar uma série vigente com o nome confirmado, **pare e reporte**. Não troque por palpite.
