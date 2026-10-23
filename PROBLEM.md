@@ -79,6 +79,8 @@ Camada 3 — LLM como juiz (agente RAG + atas do Copom)
   gera rascunho de RIF pro COAF
 ```
 
+Os percentuais de cobertura acima são estimativa de desenho, feita antes de medir. Medido nas 4.509 transações sintéticas de `deploy/hf_space/data/processed/resultado_compliance.csv`: a Camada 1 sinaliza 3.345 casos (74,2%), e a zona cinza da Camada 2 (score entre 40 e 70), que é o que seguiria para o LLM, tem 1.164 casos (25,8%), não 0,2%. Com o juiz ligado, a Camada 3 receberia cerca de 130 vezes o volume previsto, e a premissa de custo da cascata não se sustenta sem um corte mais estreito da zona cinza.
+
 A inovação central é o IRF como feature contextual: injetar o índice como variável do modelo transforma um classificador comportamental num sistema que entende quando o comportamento é suspeito, não só como ele parece.
 
 Resposta: um pipeline em cascata onde cada camada resolve o trivial e passa o complexo adiante. A eficiência vem da hierarquia, a inteligência vem do IRF.

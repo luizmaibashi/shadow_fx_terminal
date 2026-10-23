@@ -77,7 +77,7 @@ Os `.csv` não são versionados (segurança de IP); os scripts regeneram tudo do
 
 O Brasil convive com uma crise silenciosa de integridade financeira. Três coisas estão acontecendo ao mesmo tempo:
 
-1. **Fraude bancária em escala industrial.** Só em 2024 o sistema registrou mais de R$ 2,5 bilhões em prejuízo com fraude via Pix: engenharia social, SIM swap, contas laranja. Hoje o golpe não usa mala de dinheiro, usa Pix e stablecoin.
+1. **Fraude bancária em escala industrial.** Só em 2024 as fraudes via Pix somaram cerca de R$ 4,9 bilhões em perdas, segundo dados do Banco Central obtidos via Lei de Acesso à Informação ([Jovem Pan/Broadcast](https://jovempan.com.br/noticias/economia/fraudes-no-pix-causaram-prejuizos-de-cerca-de-r-5-bilhoes-no-acumulado-de-2024.html)): engenharia social, SIM swap, contas laranja. Hoje o golpe não usa mala de dinheiro, usa Pix e stablecoin.
 2. **O fenômeno das bets.** Com a regulamentação das apostas esportivas em 2024, explodiram os casos de lavagem via casa de apostas: deposita dinheiro sujo, aposta em odds garantidas entre contas próprias, saca o prêmio limpo. Stablecoin entra nesse fluxo como camada de anonimização entre o fiat e o cripto.
 3. **Evasão de divisas via stablecoin.** A desvalorização do Real empurra dois públicos opostos pro USDT: o cidadão comum que quer preservar poder de compra, e quem usa o mesmo instrumento pra mandar dinheiro pra fora sem passar pelo câmbio oficial. Um sistema de compliance que não distingue esses dois perfis não serve pra nada.
 
@@ -406,6 +406,8 @@ Nota de calibração: os pesos do IRF v1 (câmbio 40%, USDT 35%, Copom 25%) vier
 | VERMELHO (ação imediata) | 101 | 2,2% |
 
 Números medidos em 2026-08-11, depois de corrigir um bug de calibração no `score_samples()` do Isolation Forest (a versão anterior classificava quase tudo como suspeito, por causa de um range de normalização hardcoded errado) e de reconciliar com o `IRF_LAG_DAYS=14` (lag anti-vazamento de dado) do histórico real do projeto. Detalhe em `docs/audit/audit_report_v2.md` § 6 e em `docs/tese/shadow-fx-vantagem-competitiva/TESE.md` (adendo).
+
+A tabela acima é o alerta final. O roteamento entre camadas é outra conta: na mesma base, a zona cinza da Camada 2 (score entre 40 e 70), que seguiria para o juiz LLM, tem 1.164 transações (25,8%). O desenho em `PROBLEM.md` previa cerca de 0,2%. Com o juiz ligado, o custo da Camada 3 seria muito maior que o planejado, e esse é o próximo ajuste antes de ligá-lo.
 
 ### O que o modelo resolve, e o que ele não resolve de graça
 
