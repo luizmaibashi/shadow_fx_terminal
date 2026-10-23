@@ -68,6 +68,14 @@ def para_diaria_sem_lookahead(mensal: pd.DataFrame, indice_diario: pd.DatetimeIn
 - `AGENTS.md`, seção "Regras de engenharia": acrescentar 1 linha. "Pipeline é lote D+1: feature e regra usam no máximo o dia inteiro da transação. Macro mensal entra pela data de disponibilidade (`macro_disponibilidade.py`), não por interpolação."
 - Não editar o README. O alinhamento de documentação pública é uma fase separada.
 
+### 3.6 Esclarecimentos (2026-10-23, após o Codex parar com duas divergências)
+
+1. **A Selic é série diária e não passa por `mensal_de_diaria`.** `mensal_de_diaria` só extrai o dia 1 das colunas listadas em `OFFSET_DISPONIBILIDADE_DIAS`. As colunas de `SERIES_DIARIAS` (`selic_meta`) mantêm todas as linhas diárias originais (no arquivo local, 18 das 20 mudanças caem fora do dia 1), são deslocadas pelo offset delas (1 dia) e seguem em `ffill`. O teste do §5.6 passa a incluir uma Selic que muda no meio do mês e precisa ser preservada.
+2. **NaN de disponibilidade não vira 0.** Em `recalcular_irf.py`, remova o `fillna(0.0)` de `ipca_desvio_meta`, e de qualquer derivada macro que venha do mestre, quando o NaN vier da falta de disponibilidade. O NaN segue até `calcular_irf_v2`, e o IRF daquele dia fica NaN. O fallback 0.0 com `logger.warning` continua valendo só quando **a coluna inteira** está ausente (o caso já existente).
+   - Confirme e teste que a calibração p95 (`calcular_calibracao_irf_v2`) ignora NaN em vez de propagar ou quebrar. Se não ignorar, ajuste para ignorar (por exemplo, `nanpercentile`) e teste.
+   - Registre no log quantos dias ficaram com IRF NaN.
+   - Downstream, `engenharia_features` já transforma IRF ausente em 50.0 (neutro). Esse comportamento continua, porque as transações começam em 2024 e o NaN fica no início de 2022. Atenção: `Series.asof` ignora NaN e devolve o último valor válido anterior, o que é retrospectivo e, portanto, seguro. Acrescente um teste que trave os dois casos: sem nenhum IRF válido até a data com lag, a transação recebe 50.0; com um IRF válido antes e NaN no dia, recebe o último valor válido.
+
 ## 4. Escopo
 
 **Incluídos:** `src/macro_disponibilidade.py` (novo), `src/coletar_dados.py`, `src/utils.py`, `src/recalcular_irf.py`, `src/pipeline_compliance.py`, `tests/test_vazamento_temporal.py` (novo), `AGENTS.md` (1 linha).
