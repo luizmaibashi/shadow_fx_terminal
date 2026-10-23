@@ -23,7 +23,7 @@ def macro_mensal():
         "ipca_mensal": np.arange(1, 17, dtype=float),
         "ibc_br": np.arange(100, 116, dtype=float),
         "divida_bruta_pib": np.arange(80, 96, dtype=float),
-        "expectativa_ipca_12m": np.arange(4, 20, dtype=float),
+        "meta_inflacao": np.arange(4, 20, dtype=float),
         "selic_meta": np.full(16, 10.0),
     }, index=indice)
 

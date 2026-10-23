@@ -222,8 +222,8 @@ def coletar_macro_bcb() -> pd.DataFrame | None:
         433   -> IPCA (Variacao % mensal)
         432   -> Selic Meta (% a.a.)
         24364 -> IBC-Br (Atividade Economica, base 100)
-        4537  -> Divida Bruta do Governo (% do PIB)
-        13521 -> Expectativas IPCA 12 meses (Focus)
+        13762 -> Divida Bruta do Governo Geral (% do PIB), metodologia desde 2008
+        13521 -> Meta para a inflação (% ao ano)
     """
     print("\n[P5] Coletando macro BCB (python-bcb)...")
 
@@ -237,8 +237,8 @@ def coletar_macro_bcb() -> pd.DataFrame | None:
         "ipca_mensal":          433,
         "selic_meta":           432,
         "ibc_br":               24364,
-        "divida_bruta_pib":     4537,
-        "expectativa_ipca_12m": 13521,
+        "divida_bruta_pib":     13762,
+        "meta_inflacao":        13521,
     }
 
     frames = {}

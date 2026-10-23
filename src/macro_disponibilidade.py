@@ -1,15 +1,18 @@
 """Disponibilidade temporal dos sinais macro usados no IRF."""
 
+import logging
+
 import pandas as pd
 
 
-# Estimativas conservadoras; conferir no calendário oficial antes da Fase 3.
+# Offsets conferidos em 23/10/2026; ver ADR-0011.
 OFFSET_DISPONIBILIDADE_DIAS = {
     "ipca_mensal": 45,
-    "ibc_br": 80,
-    "divida_bruta_pib": 65,
-    "expectativa_ipca_12m": 35,
+    "ibc_br": 90,
+    "divida_bruta_pib": 70,
+    "meta_inflacao": 0,  # meta anual fixada de antemão pelo CMN
 }
+logger = logging.getLogger(__name__)
 SERIES_DIARIAS = {"selic_meta": 1}
 DERIVADAS_RECALCULADAS = {"ipca_acum_12m", "desvio_meta_ipca", "divida_pib_var", "ibc_br_var"}
 ORIGEM_DERIVADAS = {
@@ -28,6 +31,10 @@ def _validar_colunas(df: pd.DataFrame) -> None:
 
 def mensal_de_diaria(df: pd.DataFrame) -> pd.DataFrame:
     """Retém observações mensais do dia 1 e toda a série diária da Selic."""
+    if "expectativa_ipca_12m" in df:
+        if "meta_inflacao" in df:
+            raise ValueError("colunas antiga e nova da meta de inflação presentes")
+        df = df.rename(columns={"expectativa_ipca_12m": "meta_inflacao"})
     _validar_colunas(df)
     if not isinstance(df.index, pd.DatetimeIndex) or df.index.has_duplicates:
         raise ValueError("macro requer DatetimeIndex sem duplicatas")
@@ -52,7 +59,11 @@ def derivar_mensais(mensal: pd.DataFrame) -> pd.DataFrame:
     if "ipca_mensal" in resultado:
         ipca = resultado["ipca_mensal"].dropna()
         resultado["ipca_acum_12m"] = ipca.rolling(12, min_periods=12).sum()
-        resultado["desvio_meta_ipca"] = resultado["ipca_acum_12m"] - 3.0
+        if "meta_inflacao" in resultado:
+            resultado["desvio_meta_ipca"] = resultado["ipca_acum_12m"] - resultado["meta_inflacao"]
+        else:
+            logger.warning("meta_inflacao ausente; usando meta de 3.0%% como fallback.")
+            resultado["desvio_meta_ipca"] = resultado["ipca_acum_12m"] - 3.0
     if "divida_bruta_pib" in resultado:
         divida = resultado["divida_bruta_pib"].dropna()
         resultado["divida_pib_var"] = divida.pct_change(fill_method=None) * 100

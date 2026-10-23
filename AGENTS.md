@@ -63,6 +63,7 @@ Atualizado em 2026-08-11 via `/grill-with-docs` (Blind Spot Pass + sabatina), de
 ## Regras de engenharia
 
 - Pipeline é lote D+1: feature e regra usam no máximo o dia inteiro da transação. Macro mensal entra pela data de disponibilidade (`macro_disponibilidade.py`), não por interpolação.
+- Fonte da dívida/PIB: SGS 13762 (DBGG, metodologia vigente desde 2008); a SGS 4537 usa a metodologia anterior e foi substituída na Fase 3 (ADR-0011).
 - `FEATURES_ML` fica centralizado em `utils.py` — nunca duplicar.
 - `IRF_LAG_DAYS=14` é obrigatório pra evitar vazamento de dado macro (IPCA/Selic/dívida-PIB são publicados com semanas de atraso; usar o IRF do dia exato da transação vazaria informação do futuro).
 - `LLM_JUDGE_ENABLED=false` por padrão — ativa via `.env` com `GEMINI_API_KEY`.
