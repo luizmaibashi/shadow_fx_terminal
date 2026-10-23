@@ -32,6 +32,7 @@ import sys
 import joblib
 import logging
 import json
+from collections import Counter
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -70,7 +71,7 @@ def suspeita_de_razoes(razoes: pd.Series) -> pd.Series:
 # ══════════════════════════════════════════════════════════════════
 
 def camada1_filtros_bcb(df: pd.DataFrame) -> pd.DataFrame:
-    """Aplica as regras deterministicas das Resolucoes BCB 519-521/2026.
+    """Aplica regras BCB em lote D+1: usa o dia inteiro, nunca dias posteriores.
 
     Regras implementadas:
         R1: Transacao unica acima de R$ 10.000
@@ -158,7 +159,7 @@ def camada1_filtros_bcb(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def engenharia_features(df: pd.DataFrame, df_irf: pd.DataFrame) -> pd.DataFrame:
-    """Cria as features para o modelo de ML.
+    """Cria features em lote D+1: usa o dia inteiro, nunca dias posteriores.
     
     Garante que as mesmas transformacoes feitas no notebook 03 
     ocorram aqui em tempo de execucao.
@@ -183,15 +184,15 @@ def engenharia_features(df: pd.DataFrame, df_irf: pd.DataFrame) -> pd.DataFrame:
         lambda d: df_irf_copy["irf_v2"].asof(d) if d in df_irf_copy.index or d >= df_irf_copy.index[0] else 50.0
     ).fillna(50.0)
 
-    # 3. Entropia de Wallets (Medida de Dispersao)
-    #🤔 POR QUÊ: Smurfers enviam valores para muitas wallets para nao levantar flag.
-    # A entropia mede quao 'espalhado' esta o dinheiro.
-    def calcular_entropia(grupo):
-        counts = grupo["wallet_destino"].value_counts(normalize=True)
-        return -np.sum(counts * np.log2(counts + 1e-9))
-
-    entropia = df.groupby("user_id").apply(calcular_entropia).reset_index(name="entropia_wallets")
-    df = df.merge(entropia, on="user_id", how="left")
+    # 3. Entropia acumulada até o fim de cada dia, por usuário.
+    entropia = pd.Series(np.nan, index=df.index, dtype=float)
+    for _, historico in df.groupby("user_id"):
+        contagens = Counter()
+        for _, dia in historico[historico["data"].notna()].groupby("data", sort=True):
+            contagens.update(dia["wallet_destino"].dropna())
+            probabilidades = np.array(list(contagens.values()), dtype=float) / sum(contagens.values())
+            entropia.loc[dia.index] = -np.sum(probabilidades * np.log2(probabilidades))
+    df["entropia_wallets"] = entropia
 
     return df
 
