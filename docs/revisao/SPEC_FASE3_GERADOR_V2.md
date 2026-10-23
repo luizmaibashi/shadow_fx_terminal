@@ -180,6 +180,6 @@ Conferido no mestre local (`carregar_dataset_mestre`): desde 2024 ele tem **só 
    Nada é estendido além da última observação. No dado local, o fim é 27/06/2025. Registre o período efetivo na saída do gerador e no JSON da medição.
 5. **Testes novos:**
    - um IRF só de dias úteis vira diário, com sábado e domingo iguais à sexta;
-   - um buraco de 5 dias corridos ou mais levanta erro;
+   - 4 dias seguidos sem observação (datas observadas a 5 dias de distância, como o feriado real) passam; 5 ou mais dias seguidos sem observação (distância ≥ 6) levantam erro;
    - o fim nunca passa da última observação;
    - nenhum valor anterior à primeira observação é preenchido.
