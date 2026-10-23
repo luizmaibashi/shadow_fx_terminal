@@ -12,6 +12,7 @@
 | [0007](0007-dashboard-estatico-em-github-pages.md) | Dashboard estático em GitHub Pages | Accepted | 2026-09-07 |
 | [0008](0008-criterio-decisao-teto-de-dano.md) | Critério de decisão por teto de dano ao poupador | Accepted | 2026-10-23 |
 | [0009](0009-cascata-real.md) | Cascata real (reporte separado de suspeita, C3 só onde o modelo acusa sem regra) | Accepted | 2026-10-23 |
+| [0011](0011-gerador-v2-placebo.md) | Gerador v2 com placebo para testar o IRF | Accepted | 2026-10-23 |
 
 ---
 
