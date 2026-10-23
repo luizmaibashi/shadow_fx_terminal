@@ -10,6 +10,8 @@
 | [0004](0004-fastapi-streamlit-architecture.md) | FastAPI + Streamlit como Stack de Deploy | Accepted | 2026-05-10 |
 | [0006](0006-persistencia-csv-em-memoria.md) | Persistência em CSV/joblib em Memória (não migrar pra banco agora) | Accepted | 2026-08-10 |
 | [0007](0007-dashboard-estatico-em-github-pages.md) | Dashboard estático em GitHub Pages | Accepted | 2026-09-07 |
+| [0008](0008-criterio-decisao-teto-de-dano.md) | Critério de decisão por teto de dano ao poupador | Accepted | 2026-10-23 |
+| [0009](0009-cascata-real.md) | Cascata real (reporte separado de suspeita, cinza por discordância) | Accepted | 2026-10-23 |
 
 ---
 

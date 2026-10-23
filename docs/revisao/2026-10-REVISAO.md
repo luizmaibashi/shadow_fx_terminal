@@ -194,6 +194,8 @@ Orçamento combinado: **~2 semanas**, concorrendo com TC4 (16/11) e com a etapa 
 
 **Decisão do Luiz (2026-10-23):** aprovado. Antes de 16/11, só a Fase 1. Fases 2-4 depois do TC4.
 
+**Revista no mesmo dia (2026-10-23, depois do CI verde da Fase 1):** o Luiz decidiu adiantar as Fases 2-4 antes do TC4, ciente de que concorrem com as pendências da TC4 (prévias da spec 0012, ensaio do vídeo, publicação do repo). O `/tese` continua obrigatório antes da Fase 3. O corte da Fase 2 ("se a TC4 apertar, para aqui") continua valendo.
+
 Fases 1-4 somam ~9-11 dias úteis: dentro das 2 semanas, mas apertado com o TC4. **Recomendação:** fazer só a Fase 1 antes de 16/11. Ela tem o maior retorno por hora (corrige uma afirmação pública e vira a melhor história de entrevista: "achei que meu próprio teste era circular"). Fases 2-4 depois do TC4.
 
 Pelo checklist da skill `tese`, o plano completo passa de 2 semanas e mexe com carreira (2 de 3 "sim"): **rodar `/tese` antes da Fase 3**, com a pergunta "vale gastar mais 1-2 semanas no Shadow FX, ou o portfólio corrigido já basta para a vaga-alvo?".
