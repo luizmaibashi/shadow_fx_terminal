@@ -248,6 +248,7 @@ class TestFallbackPipeline:
         from pipeline_compliance import executar_pipeline
         df = executar_pipeline(df_transacoes, df_irf)
         # Se havia casos cinza, verificar que fallback foi aplicado
-        mask_cinza = df["c2_classificacao"] == "cinza"
+        # ADR-0009: C3 recebe discordância C1/C2, não bucket 40-70.
+        mask_cinza = df["zona_cinza"]
         if mask_cinza.any():
             assert (df.loc[mask_cinza, "c3_veredito"] == "FALLBACK").all()

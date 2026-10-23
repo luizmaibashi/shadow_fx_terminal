@@ -8,6 +8,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from decisao import escolher_limiar_operacao, limiar_por_custo, split_por_usuario
+from pipeline_compliance import camada1_filtros_bcb, decisao_cascata
 
 
 def exemplo():
@@ -79,3 +80,37 @@ def test_score_nan_falha():
 def test_custo_contado_por_usuario():
     assert limiar_por_custo(exemplo(), "c2_score_anomalia", 1) == 80.0
     assert limiar_por_custo(exemplo(), "c2_score_anomalia", 10) == 50.0
+
+
+@pytest.mark.parametrize("regra,score,cor,cinza", [
+    (True, 80.0, "VERMELHO", False),
+    (False, 20.0, "VERDE", False),
+    (True, 20.0, "AMARELO", True),
+    (False, 80.0, "AMARELO", True),
+])
+def test_tabela_cascata(regra, score, cor, cinza):
+    df = pd.DataFrame({"c1_suspeita": [regra], "c1_reporte": [True],
+                       "c2_score_anomalia": [score]})
+    saida = decisao_cascata(df, 50.0)
+    assert saida.loc[0, "alerta_final"] == cor
+    assert bool(saida.loc[0, "zona_cinza"]) == cinza
+
+
+def test_limiar_desligado():
+    df = pd.DataFrame({"c1_suspeita": [True, False], "c2_score_anomalia": [90, 90]})
+    saida = decisao_cascata(df, None)
+    assert saida["c2_positivo"].tolist() == [False, False]
+    assert saida["alerta_final"].tolist() == ["AMARELO", "VERDE"]
+
+
+@pytest.mark.parametrize("valores,regra", [([15000], "R1"), ([6000] * 9, "R2")])
+def test_reporte_r1_r2_nao_e_suspeita(valores, regra):
+    df = pd.DataFrame({"user_id": ["u"] * len(valores),
+                       "timestamp": pd.date_range("2024-06-15 12:00", periods=len(valores), freq="D"),
+                       "valor_brl": valores, "wallet_destino": ["w"] * len(valores)})
+    saida = camada1_filtros_bcb(df)
+    assert saida["c1_reporte"].any()
+    assert any(regra in razao for razao in saida["c1_razoes"])
+    assert not saida["c1_suspeita"].any()
+    saida["c2_score_anomalia"] = 20.0
+    assert (decisao_cascata(saida, 50.0)["alerta_final"] == "VERDE").all()

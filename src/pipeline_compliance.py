@@ -31,6 +31,7 @@ import os
 import sys
 import joblib
 import logging
+import json
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -358,7 +359,34 @@ def gerar_explicacao_xai(row) -> str:
 # PIPELINE COMPLETO
 # ══════════════════════════════════════════════════════════════════
 
-def executar_pipeline(df_tx: pd.DataFrame, df_irf: pd.DataFrame) -> pd.DataFrame:
+_LIMIAR_NAO_INFORMADO = object()
+
+
+def decisao_cascata(df: pd.DataFrame, limiar: float | None) -> pd.DataFrame:
+    """Decide a cor pela concordância entre suspeita C1 e positivo C2."""
+    df = df.copy()
+    df["c2_positivo"] = False if limiar is None else df["c2_score_anomalia"] >= limiar
+    df["zona_cinza"] = df["c1_suspeita"] ^ df["c2_positivo"]
+    df["alerta_final"] = np.select(
+        [df["c1_suspeita"] & df["c2_positivo"], df["zona_cinza"]],
+        ["VERMELHO", "AMARELO"], default="VERDE",
+    )
+    return df
+
+
+def _resolver_limiar(limiar_operacao):
+    if limiar_operacao is not _LIMIAR_NAO_INFORMADO:
+        return limiar_operacao, "argumento"
+    caminho = MODELS_DIR / "limiar_operacao.json"
+    if caminho.exists():
+        with caminho.open(encoding="utf-8") as arquivo:
+            return json.load(arquivo)["limiar"], "artefato"
+    logger.warning("Limiar ADR-0008 não calibrado; usando legado 70.0.")
+    return 70.0, "legado_70"
+
+
+def executar_pipeline(df_tx: pd.DataFrame, df_irf: pd.DataFrame,
+                      limiar_operacao=_LIMIAR_NAO_INFORMADO) -> pd.DataFrame:
     """Executa as 3 camadas do pipeline de compliance."""
     logger.info("INICIANDO PIPELINE DE COMPLIANCE (3 Camadas)")
     logger.info("=" * 55)
@@ -381,9 +409,13 @@ def executar_pipeline(df_tx: pd.DataFrame, df_irf: pd.DataFrame) -> pd.DataFrame
     logger.info(f"     Classificados SUSPEITOS: {(df_c2['c2_classificacao'] == 'suspeito').sum()}")
     logger.info(f"     Classificados CINZA:     {(df_c2['c2_classificacao'] == 'cinza').sum()}")
 
+    limiar, origem = _resolver_limiar(limiar_operacao)
+    df_c2 = decisao_cascata(df_c2, limiar)
+    df_c2["c2_limiar_origem"] = origem
+
     # Camada 3: Julgamento qualitativo via LLM-as-Judge
     # (com fallback heuristico se LLM desabilitado ou API indisponivel)
-    mask_cinza = df_c2["c2_classificacao"] == "cinza"
+    mask_cinza = df_c2["zona_cinza"]
     if mask_cinza.any():
         from agente_rag import preparar_prompt_llm
         df_c2.loc[mask_cinza, "c3_prompt_llm"] = df_c2[mask_cinza].apply(
@@ -408,13 +440,6 @@ def executar_pipeline(df_tx: pd.DataFrame, df_irf: pd.DataFrame) -> pd.DataFrame
         df_c2["c2_score_anomalia"] * 0.6 +
         df_c2["c1_flag_int"] * 40.0 * 0.4
     ).clip(0, 100).round(1)
-
-    df_c2["alerta_final"] = pd.cut(
-        df_c2["score_final"],
-        bins=[0, 40, 70, 100],
-        labels=["VERDE", "AMARELO", "VERMELHO"],
-        include_lowest=True,
-    )
 
     # PM Improvement: Explainability (XAI)
     logger.info("[PM] Gerando justificativas (XAI) para os alertas...")
