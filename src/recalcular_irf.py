@@ -23,6 +23,7 @@ Execute: python src/recalcular_irf.py
 
 import sys
 import json
+import logging
 import pandas as pd
 from pathlib import Path
 
@@ -34,6 +35,9 @@ from utils import (
     calcular_indice_risco_fiscal,
     calcular_calibracao_irf_v2,
 )
+
+logger = logging.getLogger(__name__)
+ATA_COPOM_OFFSET_DIAS = 6  # estimativa; conferir calendário oficial antes da Fase 3
 
 
 def carregar_score_copom_diario() -> pd.Series:
@@ -51,14 +55,17 @@ def carregar_score_copom_diario() -> pd.Series:
     df_copom = pd.read_csv(copom_path, parse_dates=["data"])
     df_copom = df_copom.sort_values("data")
 
-    # Redirecionar para serie diaria com ffill
+    # A ata só pode afetar dias a partir da publicação estimada.
     idx_diario = pd.date_range("2022-01-01", "2025-06-30", freq="D")
     serie = pd.Series(
         df_copom["score_hawkish"].values,
-        index=pd.DatetimeIndex(df_copom["data"].values),
+        index=pd.DatetimeIndex(df_copom["data"].values) + pd.Timedelta(days=ATA_COPOM_OFFSET_DIAS),
         name="score_copom"
     )
-    serie_diaria = serie.reindex(idx_diario).ffill().bfill()
+    serie_diaria = serie.reindex(serie.index.union(idx_diario)).sort_index().ffill().reindex(idx_diario)
+    neutros = int(serie_diaria.isna().sum())
+    logger.warning("Copom: %s dias anteriores à primeira ata disponível receberam 0.5 neutro.", neutros)
+    serie_diaria = serie_diaria.fillna(0.5)
     return serie_diaria
 
 
@@ -68,8 +75,7 @@ def calcular_serie_irf_v2(df_mestre: pd.DataFrame, score_copom_diario: pd.Series
 
     Deriva os sinais de entrada necessarios:
         - variacao_usdt_30d:  pct_change(30) do volume USDT
-        - divida_pib_var:     pct_change(1) mensal da Divida/PIB
-        - ibc_br_var:         pct_change(1) do IBC-Br
+        - divida_pib_var e ibc_br_var: já calculadas sobre observações mensais no mestre
 
     Calibra os thresholds de normalizacao do IRF v2 empiricamente (p95) sobre
     essa mesma serie historica, em vez de usar as constantes hardcoded.
@@ -86,22 +92,19 @@ def calcular_serie_irf_v2(df_mestre: pd.DataFrame, score_copom_diario: pd.Series
     df["variacao_usdt_30d"] = df["usdt_volume"].pct_change(30) * 100
     df["variacao_cambio_30d"] = df["brl_usd"].pct_change(30) * 100
 
-    if "divida_bruta_pib" in df.columns:
-        df["divida_pib_var"] = df["divida_bruta_pib"].pct_change(1) * 100
-    else:
+    if "divida_pib_var" not in df.columns:
+        logger.warning("divida_pib_var ausente no mestre; usando 0.0.")
         df["divida_pib_var"] = 0.0
 
-    if "ibc_br" in df.columns:
-        df["ibc_br_var"] = df["ibc_br"].pct_change(1) * 100
-    else:
+    if "ibc_br_var" not in df.columns:
+        logger.warning("ibc_br_var ausente no mestre; usando 0.0.")
         df["ibc_br_var"] = 0.0
 
-    # Usar desvio_meta_ipca se disponivel, senao usar ipca_mensal - 3.0
+    # NaN por indisponibilidade permanece NaN até calcular_irf_v2.
     if "desvio_meta_ipca" in df.columns:
-        df["ipca_desvio_meta"] = df["desvio_meta_ipca"].fillna(0.0)
-    elif "ipca_mensal" in df.columns:
-        df["ipca_desvio_meta"] = (df["ipca_mensal"].rolling(12).sum() - 3.0).fillna(0.0)
+        df["ipca_desvio_meta"] = df["desvio_meta_ipca"]
     else:
+        logger.warning("desvio_meta_ipca ausente no mestre; usando 0.0.")
         df["ipca_desvio_meta"] = 0.0
 
     # brl_adj_dxy_30d: usa coluna calculada ou deriva do BRL/DXY
@@ -111,8 +114,12 @@ def calcular_serie_irf_v2(df_mestre: pd.DataFrame, score_copom_diario: pd.Series
         )
 
     # Associar score Copom diario
-    df = df.join(score_copom_diario.rename("score_copom"), how="left")
-    df["score_copom"] = df["score_copom"].fillna(0.5)
+    if score_copom_diario is None:
+        logger.warning("Série Copom ausente; usando 0.5 neutro.")
+        df["score_copom"] = 0.5
+    else:
+        df = df.join(score_copom_diario.rename("score_copom"), how="left")
+        df["score_copom"] = df["score_copom"].fillna(0.5)
 
     # Calibrar thresholds do IRF v2 uma vez, empiricamente, sobre a serie historica
     # inteira — nao mais constantes hardcoded. Ver calcular_calibracao_irf_v2().
@@ -147,6 +154,7 @@ def calcular_serie_irf_v2(df_mestre: pd.DataFrame, score_copom_diario: pd.Series
         irf_v1_vals.append(irf_v1)
 
     df["irf_v2"]       = irf_v2_vals
+    logger.warning("IRF v2: %s dias com NaN por ausência de sinal disponível.", int(df["irf_v2"].isna().sum()))
     df["irf"]          = irf_v1_vals  # Manter coluna "irf" para compatibilidade com pipeline
     df["irf_v2_mm7d"]  = df["irf_v2"].rolling(7, min_periods=1).mean().round(2)
     df["irf_v2_mm30d"] = df["irf_v2"].rolling(30, min_periods=1).mean().round(2)
